@@ -171,6 +171,18 @@ def create_derived_rows_df(row) -> pd.DataFrame:
                 new_df = pd.DataFrame([tmp_row])
                 created_df = pd.concat([created_df, new_df], ignore_index=True)
 
+        if colname == "EXTRA_CANS" and value > 0:
+            current_sort_by += 1
+            tmp_row = get_new_tmp_row(
+                current_bu,
+                "BASE",
+                "Additional Canister Level",
+                current_sort_by,
+            )
+            tmp_row["QUANTITY"] = value  # set the quantity to the number of extra cans
+            new_df = pd.DataFrame([tmp_row])
+            created_df = pd.concat([created_df, new_df], ignore_index=True)
+
         if colname == "Manlift Charge" and value > 0:
             current_sort_by += 1
             tmp_row = get_new_tmp_row(
