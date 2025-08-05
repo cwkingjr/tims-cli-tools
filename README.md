@@ -28,11 +28,7 @@ Run the below command to verify that uv is installed on your system. It just cal
 uv --version
 ```
 
-## TIMS Invoice Transformer
-
-The tims_invoice_transformer tool reads a spreadsheet extracted from the master tracing spreadsheet, grabs the columns it needs, and generates an output spreadsheet with the data transformed and formatted in a way that is required for pasting into a specific third party's invoice submission spreadsheet.
-
-### Installation
+## Install TIMS CLI Tools
 
 Using the PowerShell or Git Bash Terminal run this command at the shell prompt:
 
@@ -40,9 +36,11 @@ Using the PowerShell or Git Bash Terminal run this command at the shell prompt:
 uv tool install https://github.com/cwkingjr/tims-cli-tools.git
 ```
 
-### Use
+## TIMS Invoice Transformer
 
-Invoke the tool and pass it the input (master extract) spreadsheet path as an argument. You'll love your life more if you don't put spaces in your file name.
+The tims_invoice_transformer tool reads a spreadsheet extracted from the master tracing spreadsheet, grabs the columns it needs, and generates an output spreadsheet with the data transformed into the format required for pasting into a specific third party's invoice submission spreadsheet.
+
+Invoke the tool and pass it the path as to the extract spreadsheet. You'll love your life more if you don't put spaces in your file names.
 
 ```
 tims_invoice_transformer Z:/invoice.xlsx
