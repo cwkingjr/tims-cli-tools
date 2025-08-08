@@ -6,6 +6,7 @@ from datetime import datetime
 
 import pandas as pd
 import pytz
+from rich.pretty import pprint
 
 from . import desc, field, price, subcat
 
@@ -29,7 +30,7 @@ def get_new_row(*, bu: int, subcat: str, desc: str, qty: int = 1, sortby: int) -
     return tmp_row
 
 
-def create_derived_rows_df(row: pd.Series) -> pd.DataFrame:
+def create_derived_rows_list(row: pd.Series) -> list[dict]:
     """Create derived rows based on the input row."""
     current_bu = None
     current_sort_by = None
@@ -157,15 +158,12 @@ def create_derived_rows_df(row: pd.Series) -> pd.DataFrame:
             )
             new_rows.append(tmp_row)
 
-        new_df = pd.DataFrame(new_rows)
-
-    # return dataframe with all the derived rows
-    return new_df
+    return new_rows
 
 
 def main() -> None:
     if len(sys.argv) < 2:
-        print(f"Usage: {sys.argv[0]} <input_file>")
+        pprint(f"Usage: {sys.argv[0]} <input_file>")
         sys.exit(1)
 
     timezone_name = "US/Central"
@@ -214,10 +212,14 @@ def main() -> None:
     # now that we have the original data straightened out, let's get on with creating the derived rows
 
     # iterate the rows and build new subordinate rows based upon the data in the pertinent columns
+    all_new_rows = []
     for _, row in wanted_df.iterrows():
-        row_df = create_derived_rows_df(row)
-        if not row_df.empty:
-            wanted_df = pd.concat([wanted_df, row_df], ignore_index=True)
+        new_rows = create_derived_rows_list(row)
+        if new_rows:
+            all_new_rows.extend(new_rows)
+
+    new_rows_df = pd.DataFrame(all_new_rows)
+    wanted_df = pd.concat([wanted_df, new_rows_df], ignore_index=True)
 
     wanted_df = wanted_df.sort_values(by=[field.SORT_BY], ascending=True)
 
