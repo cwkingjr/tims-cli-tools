@@ -42,6 +42,14 @@ The tims_invoice_transformer tool reads a spreadsheet extracted from the master 
 
 Invoke the tool and pass it the path as to the extract spreadsheet. You'll love your life more if you don't put spaces in your file names.
 
+On Unix/Linux:
+
 ```
 tims_invoice_transformer Z:/invoice.xlsx
+```
+
+On Windows:
+
+```
+tims_invoice_transformer.exe Z:/invoice.xlsx
 ```
