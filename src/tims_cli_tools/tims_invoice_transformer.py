@@ -3,9 +3,11 @@
 
 import sys
 from datetime import datetime
-import pytz
+
 import pandas as pd
-from . import field, desc, price, subcat
+import pytz
+
+from . import desc, field, price, subcat
 
 
 def check_for_required_fields(df: pd.DataFrame) -> None:
