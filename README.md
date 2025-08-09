@@ -12,6 +12,14 @@ Exit the terminal. Type "exit" and hit return.
 
 <p align="center"><img src="images/windows-terminal-exit.png" width="400" /></p>
 
+## Git Bash
+
+You'll need git installed on your computer so we can download the program directly from GitHub versus me having to publish this package to the Python Package Index (PyPI). To get that done, we'll just choose the easiest way possible, and get an awesome Unix-y terminal with some cool/useful Unix commands in the process. That means you'll download and install Git Bash, running the installer and selecting all the default settings. Except, IF the choice to install a desktop icon isn't selected, select that during the install.
+
+Get the Git Bash installer here: https://gitforwindows.org/.
+
+Once Git Bash is installed, git will be installed and available, so if you don't want to learn some awesome Unix stuff, you can ignore it afterward.
+
 ## UV
 
 ### Install UV
@@ -86,7 +94,7 @@ Windows Example:
 tims_invoice_transformer.exe Z:/invoice.xlsx
 ```
 
-If you are not very good at moving around the terminal yet, get your self an intro over at https://github.com/cwkingjr/unix-command-intro-for-windows-folks or just grab the path to the file you want to process via the Windows File Explorer and paste it in after the program command and one space on the command line.
+If you are not very good at moving around the terminal yet, get yourself an intro over at https://github.com/cwkingjr/unix-command-intro-for-windows-folks or just grab the path to the file you want to process via the Windows File Explorer and paste it in after the program command and one space on the command line.
 
 Grabbing the path via the Windows File Explorer:
 
