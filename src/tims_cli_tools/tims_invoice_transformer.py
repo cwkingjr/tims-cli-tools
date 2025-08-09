@@ -292,7 +292,7 @@ def main() -> None:
     path_parent = path.parent
     add_to_filename = f"_transformed_{datetime.now(tz=tz).strftime('%Y%m%d_%H%M%S')}"
     cleaned_filename = filename_no_extension.strip().replace(" ", "_")
-    new_filename = cleaned_filename + add_to_filename + "." + filename_extension
+    new_filename = cleaned_filename + add_to_filename + filename_extension
     cleaned_full_path = path_parent / new_filename
 
     wanted_df.to_excel(cleaned_full_path)
