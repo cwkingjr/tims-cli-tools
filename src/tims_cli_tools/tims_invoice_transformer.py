@@ -3,6 +3,7 @@
 
 import sys
 from datetime import datetime
+from pathlib import Path
 
 import pandas as pd
 import pytz
@@ -30,6 +31,28 @@ def get_new_row(*, bu: int, subcat: str, desc: str, qty: int = 1, sortby: int) -
     return tmp_row
 
 
+def ensure_float(*, number=None, col_name: str, row: pd.Series) -> bool:
+    """Make sure col with expected prices/floats have a legit value."""
+    try:
+        float(number)
+    except ValueError as e:
+        msg = f"Whoops, was expecting a price/float value in col '{col_name}' but got '{number}' on row:\n{row}"
+        raise ValueError(msg) from e
+    else:
+        return True
+
+
+def ensure_int(*, number=None, col_name: str, row: pd.Series) -> bool:
+    """Make sure col with expected integers have a legit value."""
+    try:
+        int(number)
+    except ValueError as e:
+        msg = f"Whoops, was expecting a count/integer value in col '{col_name}' but got '{number}' on row:\n{row}"
+        raise ValueError(msg) from e
+    else:
+        return True
+
+
 def create_derived_rows_list(row: pd.Series) -> list[dict]:
     """Create derived rows based on the input row."""
     current_bu = None
@@ -43,8 +66,15 @@ def create_derived_rows_list(row: pd.Series) -> list[dict]:
 
     new_rows = []
 
+    # Drop the NAN columns from the Series so we don't have to process them
+    row = row.dropna()
+
     for col_name, col_value in row.items():
-        if col_name == field.HVF and col_value > 0:
+        if col_name == field.HVF and ensure_float(
+            number=col_value,
+            col_name=col_name,
+            row=row,
+        ):
             current_sort_by += 1
             tmp_row = get_new_row(
                 bu=current_bu,
@@ -54,7 +84,11 @@ def create_derived_rows_list(row: pd.Series) -> list[dict]:
             )
             new_rows.append(tmp_row)
 
-        if col_name == field.LIGHT_INSP and col_value > 0:
+        if col_name == field.LIGHT_INSP and ensure_float(
+            number=col_value,
+            col_name=col_name,
+            row=row,
+        ):
             current_sort_by += 1
             tmp_row = get_new_row(
                 bu=current_bu,
@@ -64,7 +98,11 @@ def create_derived_rows_list(row: pd.Series) -> list[dict]:
             )
             new_rows.append(tmp_row)
 
-        if col_name == field.MIG_BIRD and col_value > 0:
+        if col_name == field.MIG_BIRD and ensure_float(
+            number=col_value,
+            col_name=col_name,
+            row=row,
+        ):
             current_sort_by += 1
             tmp_row = get_new_row(
                 bu=current_bu,
@@ -74,7 +112,11 @@ def create_derived_rows_list(row: pd.Series) -> list[dict]:
             )
             new_rows.append(tmp_row)
 
-        if col_name == field.WINDSIM and col_value > 0:
+        if col_name == field.WINDSIM and ensure_float(
+            number=col_value,
+            col_name=col_name,
+            row=row,
+        ):
             current_sort_by += 1
             tmp_row = get_new_row(
                 bu=current_bu,
@@ -84,7 +126,11 @@ def create_derived_rows_list(row: pd.Series) -> list[dict]:
             )
             new_rows.append(tmp_row)
 
-        if col_name == field.TTP_INIT_READ and col_value > 0:
+        if col_name == field.TTP_INIT_READ and ensure_float(
+            number=col_value,
+            col_name=col_name,
+            row=row,
+        ):
             current_sort_by += 1
             tmp_row = get_new_row(
                 bu=current_bu,
@@ -94,7 +140,11 @@ def create_derived_rows_list(row: pd.Series) -> list[dict]:
             )
             new_rows.append(tmp_row)
 
-        if col_name == field.TENSION and col_value > 0:
+        if col_name == field.TENSION and ensure_float(
+            number=col_value,
+            col_name=col_name,
+            row=row,
+        ):
             current_sort_by += 1
 
             # get a temp row and just change the desc below
@@ -113,11 +163,13 @@ def create_derived_rows_list(row: pd.Series) -> list[dict]:
             elif col_value == price.PRICE_1000:
                 tmp_row[field.DESCRIPTION] = desc.GUY_TTP_12_PLUS
             else:
-                unknown_tension_value = f"Unexpected Tension Price value: {col_value}."
+                unknown_tension_value = (
+                    f"Unexpected Tension Price value: {col_value} on row\n{row}."
+                )
                 raise ValueError(unknown_tension_value)
             new_rows.append(tmp_row)
 
-        if col_name == field.MAINT and col_value is not None:
+        if col_name == field.MAINT:
             # convert the value to an integer representing minutes
             try:
                 # convert time object to total minutes
@@ -136,7 +188,11 @@ def create_derived_rows_list(row: pd.Series) -> list[dict]:
                 )
                 new_rows.append(tmp_row)
 
-        if col_name == field.EXTRA_CANS and col_value > 0:
+        if col_name == field.EXTRA_CANS and ensure_int(
+            number=col_value,
+            col_name=col_name,
+            row=row,
+        ):
             # set the quantity to the number of extra cans (value)
             current_sort_by += 1
             tmp_row = get_new_row(
@@ -148,7 +204,11 @@ def create_derived_rows_list(row: pd.Series) -> list[dict]:
             )
             new_rows.append(tmp_row)
 
-        if col_name == field.MAN_LIFT and col_value > 0:
+        if col_name == field.MAN_LIFT and ensure_float(
+            number=col_value,
+            col_name=col_name,
+            row=row,
+        ):
             current_sort_by += 1
             tmp_row = get_new_row(
                 bu=current_bu,
@@ -205,6 +265,8 @@ def main() -> None:
     wanted_df[field.EXTRA_CANS] = wanted_df[field.STRUCTURE].apply(
         lambda x: x - 1 if isinstance(x, int) and x - 1 > 0 else None,
     )
+    # Convert this to int that can handle NaN values as we were getting floats before
+    wanted_df[field.EXTRA_CANS] = wanted_df[field.EXTRA_CANS].astype(pd.Int64Dtype())
 
     # reorder the columns to match the submission template
     wanted_df = wanted_df[field.OUTPUT_COLUMNS]
@@ -223,29 +285,15 @@ def main() -> None:
 
     wanted_df = wanted_df.sort_values(by=[field.SORT_BY], ascending=True)
 
-    # if the infile is a path, get the path portion
-    if "/" in in_file:
-        out_file = (
-            in_file.split("/")[-1]
-            .strip()
-            .replace(" ", "_")
-            .replace(
-                ".xlsx",
-                f"_transformed_{datetime.now(tz=tz).strftime('%Y%m%d_%H%M%S')}.xlsx",
-            )
-        )
-    else:
-        # if the infile is just a filename
-        out_file = (
-            in_file.strip()
-            .replace(" ", "_")
-            .replace(
-                ".xlsx",
-                f"_transformed_{datetime.now(tz=tz).strftime('%Y%m%d_%H%M%S')}.xlsx",
-            )
-        )
+    # Create a new filepath with cleaned up and appended filename
+    path = Path(in_file)
+    filename_no_extension = path.stem
+    filename_extension = path.suffix
+    path_parent = path.parent
+    add_to_filename = f"_transformed_{datetime.now(tz=tz).strftime('%Y%m%d_%H%M%S')}"
+    cleaned_filename = filename_no_extension.strip().replace(" ", "_")
+    new_filename = cleaned_filename + add_to_filename + "." + filename_extension
+    cleaned_full_path = path_parent / new_filename
 
-    wanted_df.to_excel(
-        out_file,
-        index=False,
-    )
+    wanted_df.to_excel(cleaned_full_path)
+    pprint(f"Wrote new transformed spreadsheet at: {cleaned_full_path}")
