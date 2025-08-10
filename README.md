@@ -99,3 +99,9 @@ If you are not very good at moving around the terminal yet, get yourself an intr
 Grabbing the path via the Windows File Explorer:
 
 <p align="center"><img src="images/windows-file-explorer-copy-as-path.png" width="400" /></p>
+
+## Using a Windows BAT File
+
+If you would like to use a Windows Batch file to allow file drag and drop from the Windows Explorer to a batch file, have a look over at `https://github.com/cwkingjr/windows-drag-to-app-with-args` to see how to set up a batch file.
+
+Assuming `uv` installed this app on your system in the same general location as it did on mine, you can just copy the `invoice_transformer.bat` file in this repository onto your desktop and it should work. If using the one provided here doesn't work, you should be able to figure out the issue using that link provided just above.
