@@ -4,7 +4,7 @@ Home for some command line interface tools I'm building to help some folks strea
 
 ## Using the Windows PowerShell Terminal
 
-Open the terminal.
+Open the terminal by right-clicking on the Windows Start icon and choosing Terminal.
 
 <p align="center"><img src="images/windows-terminal-launch.png" width="300" /></p>
 
@@ -12,33 +12,13 @@ Exit the terminal. Type "exit" and hit return.
 
 <p align="center"><img src="images/windows-terminal-exit.png" width="400" /></p>
 
-## Git Bash
+## Install Git Bash and UV and Verify Installations
 
-You'll need git installed on your computer so we can download the program directly from GitHub versus me having to publish this package to the Python Package Index (PyPI). To get that done, we'll just choose the easiest way possible, and get an awesome Unix-y terminal with some cool/useful Unix commands in the process. That means you'll download and install Git Bash, running the installer and selecting all the default settings. Except, IF the choice to install a desktop icon isn't selected, select that during the install.
+You'll need git and uv installed on your computer. To get those, head over to https://github.com/cwkingjr/windows-install-gitbash-and-uv and install Git Bash and UV, then complete the verification steps there.
 
-Get the Git Bash installer here: https://gitforwindows.org/.
+## Update UV
 
-Once Git Bash is installed, git will be installed and available, so if you don't want to learn some awesome Unix stuff, you can ignore it afterward.
-
-## UV
-
-### Install UV
-
-You will need the UV Python package manager tool (https://github.com/astral-sh/uv) installed on your computer to install, update, and run the tools in this collection. You install uv using the PowerShell Terminal on Windows. Open the terminal and run the two commands below.
-
-Run this command to install uv:
-
-```powershell
-powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"
-```
-
-Run the below command to verify that uv is installed on your system. It just calls uv with the version argument, which simply causes uv to start, print out the installed verion, and quit. If it prints something like "uv 0.8.4" then you are good to go.
-
-```bash
-uv --version
-```
-
-### Update UV
+Update `uv` pretty often as it's under continous improvement development.
 
 ```bash
 uv self update
