@@ -295,5 +295,5 @@ def main() -> None:
     new_filename = cleaned_filename + add_to_filename + filename_extension
     cleaned_full_path = path_parent / new_filename
 
-    wanted_df.to_excel(cleaned_full_path)
+    wanted_df.to_excel(cleaned_full_path, index=False)
     pprint(f"Wrote new transformed spreadsheet at: {cleaned_full_path}")
