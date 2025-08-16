@@ -15,22 +15,22 @@ def get_toml_data() -> dict:
     if not Path.exists(config_path):
         pprint(f"Whoops, no config file exists at {config_path}")
         pprint(
-            "Please see the repo directions and make sure you have the config file in this location."
+            "Please see the repo directions and make sure you have the config file in this location.",
         )
         sys.exit(1)
 
     try:
         with Path.open(config_path, "rb") as f:
             toml_data = tomllib.load(f)
-    except IOError as e:
-        msg = f"Problem with loading toml data from the config file. Please check the settings in your config file to ensure they match the config file in the repo."
+    except OSError as e:
+        msg = "Problem with loading toml data from the config file. Please check the settings in your config file to ensure they match the config file in the repo."
         raise OSError(msg) from e
 
     return toml_data
 
 
 def main():
-    if len(sys.argv) < 2:
+    if len(sys.argv) < 2:  # noqa: PLR2004
         pprint("Whoops, no BU passed in")
         pprint("Usage: tims_bu_info <BUN>")
         pprint("Example: tims_bu_info 22222223")
