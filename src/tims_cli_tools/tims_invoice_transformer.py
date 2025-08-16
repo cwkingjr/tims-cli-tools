@@ -19,14 +19,13 @@ def check_for_required_fields(df: pd.DataFrame) -> None:
         raise ValueError("Missing required fields: " + ", ".join(missing_fields))
 
 
-def get_new_row(*, bu: int, subcat: str, desc: str, qty: int = 1, sortby: int) -> dict:
+def get_new_row(*, bu: int, subcat: str, desc: str, qty: int = 1) -> dict:
     """Create a new temporary row with the given info."""
     tmp_row = {
         field.BU: bu,
         field.SUB_CATEGORY: subcat,
         field.DESCRIPTION: desc,
         field.QUANTITY: qty,
-        field.SORT_BY: sortby,  # increment sort order
     }
     return tmp_row
 
@@ -75,12 +74,10 @@ def create_derived_rows_list(row: pd.Series) -> list[dict]:
             col_name=col_name,
             row=row,
         ):
-            current_sort_by += 1
             tmp_row = get_new_row(
                 bu=current_bu,
                 subcat=subcat.ADDER,
                 desc=desc.HEIGHT_VERIF,
-                sortby=current_sort_by,
             )
             new_rows.append(tmp_row)
 
@@ -89,12 +86,10 @@ def create_derived_rows_list(row: pd.Series) -> list[dict]:
             col_name=col_name,
             row=row,
         ):
-            current_sort_by += 1
             tmp_row = get_new_row(
                 bu=current_bu,
                 subcat=subcat.ADDER,
                 desc=desc.LIGHT_INSP,
-                sortby=current_sort_by,
             )
             new_rows.append(tmp_row)
 
@@ -103,12 +98,10 @@ def create_derived_rows_list(row: pd.Series) -> list[dict]:
             col_name=col_name,
             row=row,
         ):
-            current_sort_by += 1
             tmp_row = get_new_row(
                 bu=current_bu,
                 subcat=subcat.ADDER,
                 desc=desc.BIRD_WATCH,
-                sortby=current_sort_by,
             )
             new_rows.append(tmp_row)
 
@@ -117,12 +110,10 @@ def create_derived_rows_list(row: pd.Series) -> list[dict]:
             col_name=col_name,
             row=row,
         ):
-            current_sort_by += 1
             tmp_row = get_new_row(
                 bu=current_bu,
                 subcat=subcat.ADDER,
                 desc=desc.WINDSIM,
-                sortby=current_sort_by,
             )
             new_rows.append(tmp_row)
 
@@ -131,12 +122,10 @@ def create_derived_rows_list(row: pd.Series) -> list[dict]:
             col_name=col_name,
             row=row,
         ):
-            current_sort_by += 1
             tmp_row = get_new_row(
                 bu=current_bu,
                 subcat=subcat.ADDER,
                 desc=desc.GUY_TTP_INIT,
-                sortby=current_sort_by,
             )
             new_rows.append(tmp_row)
 
@@ -145,14 +134,11 @@ def create_derived_rows_list(row: pd.Series) -> list[dict]:
             col_name=col_name,
             row=row,
         ):
-            current_sort_by += 1
-
             # get a temp row and just change the desc below
             tmp_row = get_new_row(
                 bu=current_bu,
                 subcat=subcat.ADDER,
                 desc=desc.GUY_TTP_1_6,
-                sortby=current_sort_by,
             )
 
             # set the correct desc
@@ -178,13 +164,11 @@ def create_derived_rows_list(row: pd.Series) -> list[dict]:
                 maintenance_value_error = f"Unexpected {field.MAINT} value format: {col_value}. Expected 'H:MM' time format."
                 raise ValueError(maintenance_value_error) from e
             if total_minutes > 0:  # only create a row if there are minutes to bill
-                current_sort_by += 1
                 tmp_row = get_new_row(
                     bu=current_bu,
                     subcat=subcat.ADDER,
                     desc=desc.MAINT_MIN_RATE,
                     qty=total_minutes,
-                    sortby=current_sort_by,
                 )
                 new_rows.append(tmp_row)
 
@@ -194,13 +178,11 @@ def create_derived_rows_list(row: pd.Series) -> list[dict]:
             row=row,
         ):
             # set the quantity to the number of extra cans (value)
-            current_sort_by += 1
             tmp_row = get_new_row(
                 bu=current_bu,
                 subcat=subcat.BASE,
                 desc=desc.ADDITIONAL_CAN,
                 qty=col_value,
-                sortby=current_sort_by,
             )
             new_rows.append(tmp_row)
 
@@ -209,20 +191,26 @@ def create_derived_rows_list(row: pd.Series) -> list[dict]:
             col_name=col_name,
             row=row,
         ):
-            current_sort_by += 1
             tmp_row = get_new_row(
                 bu=current_bu,
                 subcat=subcat.WORK_AUTH,
                 desc=desc.MANLIFT_RENTAL,
-                sortby=current_sort_by,
             )
             new_rows.append(tmp_row)
+
+    # once we have the new rows, sort them by the subcategory and description
+    new_rows.sort(key=lambda x: (x[field.SUB_CATEGORY], x[field.DESCRIPTION]))
+
+    # after sort, add the sortby value to each new row
+    for one_row in new_rows:
+        current_sort_by += 1
+        one_row[field.SORT_BY] = current_sort_by
 
     return new_rows
 
 
 def main() -> None:
-    if len(sys.argv) < 2:
+    if len(sys.argv) < 2:  # noqa: PLR2004
         pprint(f"Usage: {sys.argv[0]} <input_file>")
         sys.exit(1)
 

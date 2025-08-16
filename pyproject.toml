@@ -1,6 +1,6 @@
 [project]
 name = "tims-cli-tools"
-version = "0.1.0"
+version = "0.2.0"
 description = "TIMS CLI Tools"
 readme = "README.md"
 requires-python = ">=3.13"
@@ -9,3 +9,8 @@ dependencies = ["openpyxl>=3.1.5", "pandas>=2.3.1", "rich>=14.1.0"]
 [project.scripts]
 tims_invoice_transformer = "tims_cli_tools.tims_invoice_transformer:main"
 tims_bu_info = "tims_cli_tools.tims_bu_info:main"
+
+[dependency-groups]
+dev = [
+    "ruff>=0.12.9",
+]
