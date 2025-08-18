@@ -1,60 +1,68 @@
+ADD_CAN_PRICE = "Additional Canister Price"
+ADD_CAN_LEVEL = "Additional Canister Level"
+BASE_FOR_INV = "Base for Inv."
 BU = "BU"
 DESCRIPTION = "DESCRIPTION"
-SUB_CATEGORY = "SUB CATEGORY"
-QUANTITY = "QUANTITY"
-SORT_BY = "SORT_BY"
-TIA_INSP = "TIA Inspection"
-ADD_CAN = "Additional Canister Price"
-HVF = "HVF"  # Note: no trailing space
-LIGHT_INSP = "Lighting Inspection Price"
-MIG_BIRD = "Migratory Bird"
-WINDSIM = "Windsim"
-TTP_INIT_READ = "TTP Initial Reading Price"
-TENSION = "Tension Price"
+EXTRA_CANS = "EXTRA_CANS"
 HR_PAY = "HR.PAY"
-SITE_TOTAL = "Site Total"
+HVF_WITH_SPACE = "HVF "
+HVF_NO_SPACE = "HVF"
+LIGHT_INSP = "Lighting Inspection Price"
 MAINT = "MAINTENANCE"
 MAN_LIFT = "Manlift Charge"
+MIG_BIRD = "Migratory Bird"
+QUANTITY = "QUANTITY"
+SITE_TOTAL = "Site Total"
+SORT_BY = "SORT_BY"
 STRUCTURE = "Structure"
-EXTRA_CANS = "EXTRA_CANS"
+SUB_CATEGORY = "SUB CATEGORY"
+TENSION = "Tension Price"
+TIA_INSP = "TIA Inspection"
+TTP_INIT_READ = "TTP Initial Reading Price"
+WINDSIM = "Windsim"
 
 # Fields/columns used for processing
-REQUIRED_FIELDS = [
-    "BU",
-    "Base for Inv.",
-    "Structure",
-    "TIA Inspection",
-    "Additional Canister Level",
-    "HVF ",  # note the trailing space in the column name
-    "Lighting Inspection Price",
-    "Migratory Bird",
-    "Windsim",
-    "TTP Initial Reading Price",
-    "Tension Price",
-    "HR.PAY",
-    "Site Total",
-    "MAINTENANCE",
-    "Manlift Charge",
+# This is the order seen in the input spreadsheet
+REQUIRED_INPUT_COLS = [
+    BU,
+    STRUCTURE,
+    BASE_FOR_INV,
+    TIA_INSP,
+    ADD_CAN_LEVEL,
+    HVF_WITH_SPACE,
+    LIGHT_INSP,
+    MIG_BIRD,
+    WINDSIM,
+    TTP_INIT_READ,
+    TENSION,
+    HR_PAY,
+    SITE_TOTAL,
+    MAINT,
+    MAN_LIFT,
 ]
 
-OUTPUT_COLUMNS = [
-    "SORT_BY",
-    "BU",
-    "SUB CATEGORY",
-    "DESCRIPTION",
-    "QUANTITY",
-    "TIA Inspection",
-    "Additional Canister Price",
-    "HVF",  # Note: no trailing space
-    "Lighting Inspection Price",
-    "Migratory Bird",
-    "Windsim",
-    "TTP Initial Reading Price",
-    "Tension Price",
-    "HR.PAY",
-    "Site Total",
-    "MAINTENANCE",
-    "Manlift Charge",
-    "Structure",  # leave this column so user can see what we the extra cans source data
-    "EXTRA_CANS",  # leave this column so the user can see how many extra cans we derived
+CLEAN_REQUIRED_INPUT_COLS = [
+    HVF_NO_SPACE if x == HVF_WITH_SPACE else x for x in REQUIRED_INPUT_COLS
+]
+
+OUTPUT_COLS = [
+    SORT_BY,
+    BU,
+    SUB_CATEGORY,
+    DESCRIPTION,
+    QUANTITY,
+    TIA_INSP,
+    ADD_CAN_PRICE,
+    HVF_NO_SPACE,
+    LIGHT_INSP,
+    MIG_BIRD,
+    WINDSIM,
+    TTP_INIT_READ,
+    TENSION,
+    HR_PAY,
+    SITE_TOTAL,
+    MAINT,
+    MAN_LIFT,
+    STRUCTURE,  # leave this column so user can see what we the extra cans source data
+    EXTRA_CANS,  # leave this column so the user can see how many extra cans we derived
 ]

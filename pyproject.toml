@@ -1,16 +1,50 @@
 [project]
 name = "tims-cli-tools"
-version = "0.2.0"
+version = "0.3.0"
 description = "TIMS CLI Tools"
 readme = "README.md"
 requires-python = ">=3.13"
-dependencies = ["openpyxl>=3.1.5", "pandas>=2.3.1", "rich>=14.1.0"]
+dependencies = [
+    "openpyxl>=3.1.5",
+    "pandas>=2.3.1",
+    "rich>=14.1.0",
+    "toolz>=1.0.0",
+]
 
 [project.scripts]
 tims_invoice_transformer = "tims_cli_tools.tims_invoice_transformer:main"
 tims_bu_info = "tims_cli_tools.tims_bu_info:main"
 
 [dependency-groups]
-dev = [
-    "ruff>=0.12.9",
+dev = ["pytest>=8.4.1", "ruff>=0.12.9"]
+
+[tool.ruff]
+target-version = "py313"
+
+include = ["src/**.py", "tests/**.py"]
+exclude = ["src/before.py"]
+
+lint.select = [
+    "B",    # bugbear:    potential bugs
+    "DTZ",  # datetimez:  warn about missing timezones
+    "F",    # pyflakes:   potential errors
+    "FURB", # refurb:     refurbishing and modernizing Python codebases
+    "PERF", # perflint:   avoid performance anti-patterns
+    "PL",   # pylint:     the oldest static code analyser ( sometimes a bit pedantic)
+    "RUF",  # ruff:       rules introduced by ruff
+    "S",    # bandit:     security issues
+    "SIM",  # simplify:   helps you simplify your code
+    "UP",   # pyupgrade:  upgrade syntax or newer versions of the language
 ]
+lint.ignore = []
+
+[tool.ruff.lint.per-file-ignores]
+# Some checks don't make sense in unit tests
+"tests/*.py" = [
+    "S101",    # Use of `assert` detected
+    "PLR0133", # Two constants compared in a comparison, consider replacing `1 == 1"
+]
+
+[tool.pytest.ini_options]
+pythonpath = ["./src"]
+testpaths = ["./tests"]
