@@ -8,7 +8,7 @@ from pathlib import Path
 import pandas as pd
 import pytz
 from rich.pretty import pprint
-
+from toolz import curry
 from . import desc, field, price, subcat
 
 
@@ -34,26 +34,21 @@ def get_new_row(*, bu: int, subcat: str, desc: str, qty: int = 1) -> dict:
     return tmp_row
 
 
-def ensure_float(*, number=None, col_name: str, row: pd.Series) -> bool:
-    """Make sure col with expected prices/floats have a legit value."""
+@curry
+def ensure_data_type(*, data_type, func, number, col_name: str, row: pd.Series) -> bool:
+    """Make sure col with expected ints/floats have a legit value."""
     try:
-        float(number)
+        func(number)
     except ValueError as e:
-        msg = f"Whoops, was expecting a price/float value in col '{col_name}' but got '{number}' on row:\n{row}"
+        msg = f"Whoops, was expecting a {data_type} value in col '{col_name}' but got '{number}' on row:\n{row}"
         raise ValueError(msg) from e
     else:
         return True
 
 
-def ensure_int(*, number=None, col_name: str, row: pd.Series) -> bool:
-    """Make sure col with expected integers have a legit value."""
-    try:
-        int(number)
-    except ValueError as e:
-        msg = f"Whoops, was expecting a count/integer value in col '{col_name}' but got '{number}' on row:\n{row}"
-        raise ValueError(msg) from e
-    else:
-        return True
+# curried functions
+ensure_float = ensure_data_type(data_type="float", func=float)
+ensure_int = ensure_data_type(data_type="integer", func=int)
 
 
 def get_value_from_series_col(*, series: pd.Series, field_name: str):
@@ -82,14 +77,18 @@ def build_new_rows_from_dataframe_col_values(*, dataframe: pd.DataFrame) -> list
 
 
 def create_cleaned_filepath(
-    *, in_path=Path, filename_prefix: str, dt: datetime
+    *,
+    in_path=Path,
+    filename_prefix: str,
+    dt_with_tz: datetime,
+    dt_format_str="%Y%m%d_%H%M%S",
 ) -> Path:
     """Create a new filepath with cleaned up and appended filename."""
     path = Path(in_path)
     filename_no_extension = path.stem
     filename_extension = path.suffix
     path_parent = path.parent
-    add_to_filename = f"_{filename_prefix}_{dt.strftime('%Y%m%d_%H%M%S')}"
+    add_to_filename = f"_{filename_prefix}_{dt_with_tz.strftime(dt_format_str)}"
     cleaned_filename = filename_no_extension.strip().replace(" ", "_")
     new_filename = cleaned_filename + add_to_filename + filename_extension
     cleaned_full_path = path_parent / new_filename
@@ -107,7 +106,14 @@ def create_derived_rows_list(row: pd.Series) -> list[dict]:
     row = row.dropna()
 
     for col_name, col_value in row.items():
-        if col_name == field.HVF_NO_SPACE and ensure_float(
+        # if col_name == field.HVF_NO_SPACE and ensure_float(
+        #     number=col_value,
+        #     col_name=col_name,
+        #     row=row,
+        # ):
+        if col_name == field.HVF_NO_SPACE and ensure_data_type(
+            data_type="float",
+            func=float,
             number=col_value,
             col_name=col_name,
             row=row,
@@ -252,10 +258,6 @@ def main() -> None:
         pprint(f"Usage: {sys.argv[0]} <input_file>")
         sys.exit(1)
 
-    timezone_name = "US/Central"
-    # Create a tzinfo object from the timezone name
-    tz = pytz.timezone(timezone_name)
-
     in_file = sys.argv[1]
     input_df = pd.read_excel(in_file)
 
@@ -313,7 +315,9 @@ def main() -> None:
     # output has been transformed and give it a new datetime each time so user can always see
     # when it was generated
     cleaned_path = create_cleaned_filepath(
-        in_path=in_file, filename_prefix="transformed", dt=datetime.now(tz=tz)
+        in_path=in_file,
+        filename_prefix="_transformed",
+        dt_with_tz=datetime.now(tz=pytz.timezone("US/Central")),
     )
 
     wanted_df.to_excel(cleaned_path, index=False)

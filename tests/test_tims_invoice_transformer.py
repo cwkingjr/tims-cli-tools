@@ -1,9 +1,11 @@
 import pytest
 
 from tims_cli_tools.tims_invoice_transformer import (
-    # ensure_int,
     check_for_required_fields,
     # create_cleaned_filepath,
+    ensure_data_type,
+    ensure_float,
+    ensure_int,
     get_value_from_series_col,
     # build_new_rows_from_dataframe_col_values,
 )
@@ -37,6 +39,12 @@ def df_clean_input_cols():
     )
 
 
+@pytest.fixture
+def df_series_input_cols(df_clean_input_cols):
+    _, my_series = next(df_clean_input_cols.iterrows())
+    return my_series
+
+
 def test_check_for_required_fields_valid(df_clean_input_cols):
     assert (
         check_for_required_fields(
@@ -56,16 +64,56 @@ def test_check_for_required_fields_invalid(df_clean_input_cols):
         )
 
 
-def test_get_value_from_series_col(df_clean_input_cols):
-    _, my_series = next(df_clean_input_cols.iterrows())
-    assert get_value_from_series_col(series=my_series, field_name=field.BU) == TWOS
+def test_get_value_from_series_col(df_series_input_cols):
+    assert (
+        get_value_from_series_col(series=df_series_input_cols, field_name=field.BU)
+        == TWOS
+    )
 
 
-def test_get_value_from_series_col_missing_col(df_clean_input_cols):
-    _, my_series = next(df_clean_input_cols.iterrows())
-    del my_series[field.BU]
+def test_get_value_from_series_col_missing_col(df_series_input_cols):
+    del df_series_input_cols[field.BU]
     with pytest.raises(ValueError):
-        get_value_from_series_col(series=my_series, field_name=field.BU)
+        get_value_from_series_col(series=df_series_input_cols, field_name=field.BU)
+
+
+def test_ensure_data_type_int(df_series_input_cols):
+    result = ensure_data_type(
+        data_type="int", func=int, number=5, col_name="TEST", row=df_series_input_cols
+    )
+    assert result == True
+
+
+def test_ensure_data_type_invalid_convert_raises(df_series_input_cols):
+    with pytest.raises(ValueError):
+        ensure_data_type(
+            data_type="int",
+            func=int,
+            number="blahblah",
+            col_name="TEST",
+            row=df_series_input_cols,
+        )
+
+
+def test_ensure_data_type_valid_convert(df_series_input_cols):
+    result = ensure_data_type(
+        data_type="float",
+        func=float,
+        number=5.0,
+        col_name="TEST",
+        row=df_series_input_cols,
+    )
+    assert result == True
+
+
+def test_ensure_int_valid(df_series_input_cols):
+    result = ensure_int(number=5, col_name="TEST", row=df_series_input_cols)
+    assert result == True
+
+
+def test_ensure_float_valid(df_series_input_cols):
+    result = ensure_float(number=5, col_name="TEST", row=df_series_input_cols)
+    assert result == True
 
 
 # def test_build_new_rows_from_dataframe_col_values():
