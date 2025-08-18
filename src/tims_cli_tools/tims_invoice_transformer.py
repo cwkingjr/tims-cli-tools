@@ -9,7 +9,7 @@ import pandas as pd
 import pytz
 from rich.pretty import pprint
 
-from . import desc, field, price, subcat, ensure
+from . import desc, field, price, subcat, ensure, classes
 
 
 def check_for_required_fields(
@@ -89,24 +89,8 @@ def create_derived_rows_list(row: pd.Series) -> list[dict]:
     row = row.dropna()
 
     for col_name, col_value in row.items():
-        # if col_name == field.HVF_NO_SPACE and ensure_float(
-        #     number=col_value,
-        #     col_name=col_name,
-        #     row=row,
-        # ):
-        if col_name == field.HVF_NO_SPACE and ensure.ensure_data_type(
-            data_type="float",
-            func=float,
-            number=col_value,
-            col_name=col_name,
-            row=row,
-        ):
-            tmp_row = get_new_row(
-                bu=current_bu,
-                subcat=subcat.ADDER,
-                desc=desc.HEIGHT_VERIF,
-            )
-            new_rows.append(tmp_row)
+        if col_name == field.HVF_NO_SPACE:
+            new_rows.append(classes.HVFColumnProcessor(row=row).get_derived_row())
 
         if col_name == field.LIGHT_INSP and ensure.ensure_float(
             number=col_value,

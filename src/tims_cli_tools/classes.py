@@ -69,8 +69,8 @@ class IntColumnProcessor(BaseColumnProcessor):
         )
 
 
-class HVTColumnProcessor(FloatColumnProcessor):
-    """HVT"""
+class HVFColumnProcessor(FloatColumnProcessor):
+    """HVF"""
 
     def __init__(self, row: pd.Series):
         super().__init__(row=row)
