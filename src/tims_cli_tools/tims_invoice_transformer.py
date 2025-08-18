@@ -8,8 +8,8 @@ from pathlib import Path
 import pandas as pd
 import pytz
 from rich.pretty import pprint
-from toolz import curry
-from . import desc, field, price, subcat
+
+from . import desc, field, price, subcat, ensure
 
 
 def check_for_required_fields(
@@ -32,23 +32,6 @@ def get_new_row(*, bu: int, subcat: str, desc: str, qty: int = 1) -> dict:
         field.QUANTITY: qty,
     }
     return tmp_row
-
-
-@curry
-def ensure_data_type(*, data_type, func, number, col_name: str, row: pd.Series) -> bool:
-    """Make sure col with expected ints/floats have a legit value."""
-    try:
-        func(number)
-    except ValueError as e:
-        msg = f"Whoops, was expecting a {data_type} value in col '{col_name}' but got '{number}' on row:\n{row}"
-        raise ValueError(msg) from e
-    else:
-        return True
-
-
-# curried functions
-ensure_float = ensure_data_type(data_type="float", func=float)
-ensure_int = ensure_data_type(data_type="integer", func=int)
 
 
 def get_value_from_series_col(*, series: pd.Series, field_name: str):
@@ -111,7 +94,7 @@ def create_derived_rows_list(row: pd.Series) -> list[dict]:
         #     col_name=col_name,
         #     row=row,
         # ):
-        if col_name == field.HVF_NO_SPACE and ensure_data_type(
+        if col_name == field.HVF_NO_SPACE and ensure.ensure_data_type(
             data_type="float",
             func=float,
             number=col_value,
@@ -125,7 +108,7 @@ def create_derived_rows_list(row: pd.Series) -> list[dict]:
             )
             new_rows.append(tmp_row)
 
-        if col_name == field.LIGHT_INSP and ensure_float(
+        if col_name == field.LIGHT_INSP and ensure.ensure_float(
             number=col_value,
             col_name=col_name,
             row=row,
@@ -137,7 +120,7 @@ def create_derived_rows_list(row: pd.Series) -> list[dict]:
             )
             new_rows.append(tmp_row)
 
-        if col_name == field.MIG_BIRD and ensure_float(
+        if col_name == field.MIG_BIRD and ensure.ensure_float(
             number=col_value,
             col_name=col_name,
             row=row,
@@ -149,7 +132,7 @@ def create_derived_rows_list(row: pd.Series) -> list[dict]:
             )
             new_rows.append(tmp_row)
 
-        if col_name == field.WINDSIM and ensure_float(
+        if col_name == field.WINDSIM and ensure.ensure_float(
             number=col_value,
             col_name=col_name,
             row=row,
@@ -161,7 +144,7 @@ def create_derived_rows_list(row: pd.Series) -> list[dict]:
             )
             new_rows.append(tmp_row)
 
-        if col_name == field.TTP_INIT_READ and ensure_float(
+        if col_name == field.TTP_INIT_READ and ensure.ensure_float(
             number=col_value,
             col_name=col_name,
             row=row,
@@ -173,7 +156,7 @@ def create_derived_rows_list(row: pd.Series) -> list[dict]:
             )
             new_rows.append(tmp_row)
 
-        if col_name == field.TENSION and ensure_float(
+        if col_name == field.TENSION and ensure.ensure_float(
             number=col_value,
             col_name=col_name,
             row=row,
@@ -216,7 +199,7 @@ def create_derived_rows_list(row: pd.Series) -> list[dict]:
                 )
                 new_rows.append(tmp_row)
 
-        if col_name == field.EXTRA_CANS and ensure_int(
+        if col_name == field.EXTRA_CANS and ensure.ensure_int(
             number=col_value,
             col_name=col_name,
             row=row,
@@ -230,7 +213,7 @@ def create_derived_rows_list(row: pd.Series) -> list[dict]:
             )
             new_rows.append(tmp_row)
 
-        if col_name == field.MAN_LIFT and ensure_float(
+        if col_name == field.MAN_LIFT and ensure.ensure_float(
             number=col_value,
             col_name=col_name,
             row=row,
