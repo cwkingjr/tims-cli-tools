@@ -4,12 +4,11 @@
 import sys
 from datetime import datetime
 from pathlib import Path
-
 import pandas as pd
 import pytz
 from rich.pretty import pprint
 
-from . import desc, field, price, subcat, ensure, classes
+from . import desc, field, subcat, classes
 
 
 def check_for_required_fields(
@@ -78,93 +77,43 @@ def create_cleaned_filepath(
     return cleaned_full_path
 
 
-def create_derived_rows_list(row: pd.Series) -> list[dict]:
+def create_derived_rows_list(row: pd.Series) -> list[dict]:  # noqa: PLR0912
     """Create derived rows based on the input row."""
+
     current_bu = get_value_from_series_col(series=row, field_name=field.BU)
     current_sort_by = get_value_from_series_col(series=row, field_name=field.SORT_BY)
 
     new_rows = []
 
-    # Drop the NAN columns from the Series so we don't have to process them
+    # Drop the NAN columns from the Series so we don't process them
+    # NOTE: This keeps the column processors from raising a ValueError for
+    # getting called on a column with no value, and by not calling them, we don't
+    # get bogus extra rows added for empty columns!!
+    # WARNING: Do not remove!
     row = row.dropna()
 
     for col_name, col_value in row.items():
         if col_name == field.HVF_NO_SPACE:
             new_rows.append(classes.HVFColumnProcessor(row=row).get_derived_row())
 
-        if col_name == field.LIGHT_INSP and ensure.ensure_float(
-            number=col_value,
-            col_name=col_name,
-            row=row,
-        ):
-            tmp_row = get_new_row(
-                bu=current_bu,
-                subcat=subcat.ADDER,
-                desc=desc.LIGHT_INSP,
-            )
-            new_rows.append(tmp_row)
-
-        if col_name == field.MIG_BIRD and ensure.ensure_float(
-            number=col_value,
-            col_name=col_name,
-            row=row,
-        ):
-            tmp_row = get_new_row(
-                bu=current_bu,
-                subcat=subcat.ADDER,
-                desc=desc.BIRD_WATCH,
-            )
-            new_rows.append(tmp_row)
-
-        if col_name == field.WINDSIM and ensure.ensure_float(
-            number=col_value,
-            col_name=col_name,
-            row=row,
-        ):
-            tmp_row = get_new_row(
-                bu=current_bu,
-                subcat=subcat.ADDER,
-                desc=desc.WINDSIM,
-            )
-            new_rows.append(tmp_row)
-
-        if col_name == field.TTP_INIT_READ and ensure.ensure_float(
-            number=col_value,
-            col_name=col_name,
-            row=row,
-        ):
-            tmp_row = get_new_row(
-                bu=current_bu,
-                subcat=subcat.ADDER,
-                desc=desc.GUY_TTP_INIT,
-            )
-            new_rows.append(tmp_row)
-
-        if col_name == field.TENSION and ensure.ensure_float(
-            number=col_value,
-            col_name=col_name,
-            row=row,
-        ):
-            # get a temp row and just change the desc below
-            tmp_row = get_new_row(
-                bu=current_bu,
-                subcat=subcat.ADDER,
-                desc=desc.GUY_TTP_1_6,
+        if col_name == field.LIGHT_INSP:
+            new_rows.append(
+                classes.LIGHT_INSPColumnProcessor(row=row).get_derived_row()
             )
 
-            # set the correct desc
-            if col_value == price.PRICE_700:
-                tmp_row[field.DESCRIPTION] = desc.GUY_TTP_1_6
-            elif col_value == price.PRICE_850:
-                tmp_row[field.DESCRIPTION] = desc.GUY_TTP_7_12
-            elif col_value == price.PRICE_1000:
-                tmp_row[field.DESCRIPTION] = desc.GUY_TTP_12_PLUS
-            else:
-                unknown_tension_value = (
-                    f"Unexpected Tension Price value: {col_value} on row\n{row}."
-                )
-                raise ValueError(unknown_tension_value)
-            new_rows.append(tmp_row)
+        if col_name == field.MIG_BIRD:
+            new_rows.append(classes.MIG_BIRDColumnProcessor(row=row).get_derived_row())
+
+        if col_name == field.WINDSIM:
+            new_rows.append(classes.WINDSIMColumnProcessor(row=row).get_derived_row())
+
+        if col_name == field.TTP_INIT_READ:
+            new_rows.append(
+                classes.TTP_INIT_READColumnProcessor(row=row).get_derived_row()
+            )
+
+        if col_name == field.TENSION:
+            new_rows.append(classes.TENSIONColumnProcessor(row=row).get_derived_row())
 
         if col_name == field.MAINT:
             # convert the value to an integer representing minutes
@@ -183,31 +132,13 @@ def create_derived_rows_list(row: pd.Series) -> list[dict]:
                 )
                 new_rows.append(tmp_row)
 
-        if col_name == field.EXTRA_CANS and ensure.ensure_int(
-            number=col_value,
-            col_name=col_name,
-            row=row,
-        ):
-            # set the quantity to the number of extra cans (value)
-            tmp_row = get_new_row(
-                bu=current_bu,
-                subcat=subcat.BASE,
-                desc=desc.ADDITIONAL_CAN,
-                qty=col_value,
+        if col_name == field.EXTRA_CANS:
+            new_rows.append(
+                classes.EXTRA_CANSColumnProcessor(row=row).get_derived_row()
             )
-            new_rows.append(tmp_row)
 
-        if col_name == field.MAN_LIFT and ensure.ensure_float(
-            number=col_value,
-            col_name=col_name,
-            row=row,
-        ):
-            tmp_row = get_new_row(
-                bu=current_bu,
-                subcat=subcat.WORK_AUTH,
-                desc=desc.MANLIFT_RENTAL,
-            )
-            new_rows.append(tmp_row)
+        if col_name == field.MAN_LIFT:
+            new_rows.append(classes.MAN_LIFTColumnProcessor(row=row).get_derived_row())
 
     # once we have the new rows, sort them by the subcategory and description
     new_rows.sort(key=lambda x: (x[field.SUB_CATEGORY], x[field.DESCRIPTION]))
@@ -269,8 +200,12 @@ def main() -> None:
     wanted_df = wanted_df[field.OUTPUT_COLS]
 
     # now that we have the original data straightened out, let's get on with creating the derived rows
+    # pprint(wanted_df)
+    # pprint(wanted_df.dtypes)
 
-    derived_rows = build_new_rows_from_dataframe_col_values(dataframe=wanted_df)
+    derived_rows = build_new_rows_from_dataframe_col_values(
+        dataframe=wanted_df.copy(deep=True)
+    )
     # build a dataframe so we can concat the new rows into the original rows
     derived_rows_df = pd.DataFrame(derived_rows)
     wanted_df = pd.concat([wanted_df, derived_rows_df], ignore_index=True)
@@ -287,5 +222,35 @@ def main() -> None:
         dt_with_tz=datetime.now(tz=pytz.timezone("US/Central")),
     )
 
-    wanted_df.to_excel(cleaned_path, index=False)
+    # Create a Pandas Excel writer using XlsxWriter as the engine
+    writer = pd.ExcelWriter(cleaned_path, engine="xlsxwriter")
+
+    # Convert the DataFrame to an XlsxWriter Excel object
+    wanted_df.to_excel(
+        writer, sheet_name="Sheet1", index=False
+    )  # index=False to avoid writing DataFrame index
+
+    # Get the xlsxwriter workbook and worksheet objects
+    workbook = writer.book
+    worksheet = writer.sheets["Sheet1"]
+
+    # Define a number format with a thousands separator and two decimal places
+    # The '#,##0.00' format string specifies a comma for thousands and two decimal places
+    currency_format = workbook.add_format({"num_format": "#,##0.00"})
+
+    # Apply the format to the desired column(s)
+    # worksheet.set_column("B:B", None, currency_format)
+    row_width = 15
+    subcat_row_width = 20
+    description_row_width = 50
+    worksheet.set_column(2, 2, subcat_row_width)
+    worksheet.set_column(3, 3, description_row_width)
+    # 5/F-14/O
+    worksheet.set_column(5, 14, row_width, currency_format)
+    # 16/Q
+    worksheet.set_column(16, 16, row_width, currency_format)
+
+    # Close the Pandas Excel writer and output the Excel file
+    writer.close()
+
     pprint(f"Wrote new transformed spreadsheet at: {cleaned_path}")
