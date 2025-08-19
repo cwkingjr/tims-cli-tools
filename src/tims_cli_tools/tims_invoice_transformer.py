@@ -2,7 +2,7 @@
 # in a format conducive to pasting into a copy of the submission template spreadsheet.
 
 import sys
-from datetime import datetime
+from datetime import datetime, time
 from pathlib import Path
 import pandas as pd
 import pytz
@@ -213,6 +213,17 @@ def main() -> None:
     # sort the final dataframe so the rows are in the customer-specified order in the spreadsheet
     wanted_df = wanted_df.sort_values(by=[field.SORT_BY], ascending=True)
 
+    # now lets just reformat the maintenance col from hh:mm:ss to hh:mm, since it doesn't get
+    #  copy/pasted and is only for visual verification that our auto maintenance minute conversion
+    #  into quantity worked correctly.
+    def time_to_string(val):
+        """This "object" column has type of datatime.time if there is a value and float if empty."""
+        if isinstance(val, time):
+            return val.strftime("%H:%M")
+        return val
+
+    wanted_df[field.MAINT] = wanted_df[field.MAINT].apply(time_to_string)
+
     # create an output file path based upon the old file path but with a name that indicates the
     # output has been transformed and give it a new datetime each time so user can always see
     # when it was generated
@@ -223,7 +234,7 @@ def main() -> None:
     )
 
     # Create a Pandas Excel writer using XlsxWriter as the engine
-    writer = pd.ExcelWriter(cleaned_path, engine="xlsxwriter")
+    writer = pd.ExcelWriter(cleaned_path, engine="xlsxwriter", datetime_format="hh:mm")
 
     # Convert the DataFrame to an XlsxWriter Excel object
     wanted_df.to_excel(
@@ -237,17 +248,26 @@ def main() -> None:
     # Define a number format with a thousands separator and two decimal places
     # The '#,##0.00' format string specifies a comma for thousands and two decimal places
     currency_format = workbook.add_format({"num_format": "#,##0.00"})
-
-    # Apply the format to the desired column(s)
-    # worksheet.set_column("B:B", None, currency_format)
     row_width = 15
+
+    #
+    # worksheet.set_column(FROM_COL, TO_COL, COL_WIDTH, FORMAT)
+    #
+
     subcat_row_width = 20
-    description_row_width = 50
     worksheet.set_column(2, 2, subcat_row_width)
+
+    description_row_width = 50
     worksheet.set_column(3, 3, description_row_width)
+
     # 5/F-14/O
+    # 5/F/Tia Inspection - 14/O/Site Total
     worksheet.set_column(5, 14, row_width, currency_format)
-    # 16/Q
+
+    # 15/P/Maintenance
+    worksheet.set_column(15, 15, row_width)
+
+    # 16/Q/Manlift
     worksheet.set_column(16, 16, row_width, currency_format)
 
     # Close the Pandas Excel writer and output the Excel file
