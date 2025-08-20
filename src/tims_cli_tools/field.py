@@ -3,7 +3,7 @@ ADD_CAN_LEVEL = "Additional Canister Level"
 BASE_FOR_INV = "Base for Inv."
 BU = "BU"
 DESCRIPTION = "DESCRIPTION"
-EXTRA_CANS = "EXTRA_CANS"
+EXTRA_CANS = "X_CANS"
 HR_PAY = "HR.PAY"
 HVF_WITH_SPACE = "HVF "
 HVF_NO_SPACE = "HVF"
@@ -66,3 +66,5 @@ OUTPUT_COLS = [
     STRUCTURE,  # leave this column so user can see what we the extra cans source data
     EXTRA_CANS,  # leave this column so the user can see how many extra cans we derived
 ]
+
+OUTPUT_COL_NUMS = {x: i for i, x in enumerate(OUTPUT_COLS)}

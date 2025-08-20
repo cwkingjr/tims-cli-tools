@@ -16,7 +16,7 @@ def any_numeric_representation_to_float(value) -> float:
         raise ValueError(msg)
 
 
-def money_str_to_float(money: str) -> float:
+def money_str_to_float(money: str) -> None:
     """Remove `$,` and convert to float.
 
     Use this after calling ensure_money to ensure you won't raise error here.

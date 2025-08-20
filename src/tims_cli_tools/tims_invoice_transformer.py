@@ -8,7 +8,7 @@ import pandas as pd
 import pytz
 from rich.pretty import pprint
 
-from . import desc, field, subcat, classes
+from . import field, subcat, classes
 
 
 def check_for_required_fields(
@@ -77,10 +77,9 @@ def create_cleaned_filepath(
     return cleaned_full_path
 
 
-def create_derived_rows_list(row: pd.Series) -> list[dict]:  # noqa: PLR0912
+def create_derived_rows_list(row: pd.Series) -> list[dict]:
     """Create derived rows based on the input row."""
 
-    current_bu = get_value_from_series_col(series=row, field_name=field.BU)
     current_sort_by = get_value_from_series_col(series=row, field_name=field.SORT_BY)
 
     new_rows = []
@@ -115,22 +114,17 @@ def create_derived_rows_list(row: pd.Series) -> list[dict]:  # noqa: PLR0912
         if col_name == field.TENSION:
             new_rows.append(classes.TENSIONColumnProcessor(row=row).get_derived_row())
 
-        if col_name == field.MAINT:
-            # convert the value to an integer representing minutes
-            try:
-                # convert time object to total minutes
-                total_minutes = col_value.hour * 60 + col_value.minute
-            except ValueError as e:
-                maintenance_value_error = f"Unexpected {field.MAINT} value format: {col_value}. Expected 'H:MM' time format."
-                raise ValueError(maintenance_value_error) from e
-            if total_minutes > 0:  # only create a row if there are minutes to bill
-                tmp_row = get_new_row(
-                    bu=current_bu,
-                    subcat=subcat.ADDER,
-                    desc=desc.MAINT_MIN_RATE,
-                    qty=total_minutes,
-                )
-                new_rows.append(tmp_row)
+        if (
+            col_name == field.MAINT
+            and isinstance(col_value, time)
+            and (col_value.hour > 0 or col_value.minute > 0)
+        ):
+            # this column comes into the dataframe as an object column
+            # during development I discovered that it will be converted to a datetime.time
+            # object if the value is '00:00:00 but with not all zeros; however, if it is
+            # all zeros, it gets converted/presented as a float. So, before we go off
+            # creating derived rows, we need to ensure we're dealing with a time object.
+            new_rows.append(classes.MAINTColumnProcessor(row=row).get_derived_row())
 
         if col_name == field.EXTRA_CANS:
             new_rows.append(
@@ -151,7 +145,7 @@ def create_derived_rows_list(row: pd.Series) -> list[dict]:  # noqa: PLR0912
     return new_rows
 
 
-def main() -> None:
+def main() -> None:  # noqa: PLR0912, PLR0915
     if len(sys.argv) < 2:  # noqa: PLR2004
         pprint(f"Usage: {sys.argv[0]} <input_file>")
         sys.exit(1)
@@ -199,9 +193,9 @@ def main() -> None:
     # reorder the columns to match the submission template
     wanted_df = wanted_df[field.OUTPUT_COLS]
 
+    #
     # now that we have the original data straightened out, let's get on with creating the derived rows
-    # pprint(wanted_df)
-    # pprint(wanted_df.dtypes)
+    #
 
     derived_rows = build_new_rows_from_dataframe_col_values(
         dataframe=wanted_df.copy(deep=True)
@@ -234,41 +228,130 @@ def main() -> None:
     )
 
     # Create a Pandas Excel writer using XlsxWriter as the engine
-    writer = pd.ExcelWriter(cleaned_path, engine="xlsxwriter", datetime_format="hh:mm")
+    writer = pd.ExcelWriter(cleaned_path, engine="xlsxwriter")
 
     # Convert the DataFrame to an XlsxWriter Excel object
     wanted_df.to_excel(
-        writer, sheet_name="Sheet1", index=False
-    )  # index=False to avoid writing DataFrame index
+        writer, sheet_name="Sheet1", startrow=1, header=False, index=False
+    )
 
-    # Get the xlsxwriter workbook and worksheet objects
     workbook = writer.book
     worksheet = writer.sheets["Sheet1"]
 
-    # Define a number format with a thousands separator and two decimal places
-    # The '#,##0.00' format string specifies a comma for thousands and two decimal places
-    currency_format = workbook.add_format({"num_format": "#,##0.00"})
-    row_width = 15
+    dark_purple_header_format = workbook.add_format(
+        {
+            "bold": True,
+            "text_wrap": True,
+            "align": "center",
+            "valign": "vcenter",
+            "font_color": "white",
+            "fg_color": "#700AAF",
+            "border": 1,
+        }
+    )
 
-    #
-    # worksheet.set_column(FROM_COL, TO_COL, COL_WIDTH, FORMAT)
-    #
+    blue_header_format = workbook.add_format(
+        {
+            "bold": True,
+            "text_wrap": True,
+            "align": "center",
+            "valign": "vcenter",
+            "fg_color": "#B4CAF4",
+            "border": 1,
+        }
+    )
 
-    subcat_row_width = 20
-    worksheet.set_column(2, 2, subcat_row_width)
+    light_purple_header_format = workbook.add_format(
+        {
+            "bold": True,
+            "text_wrap": True,
+            "align": "center",
+            "valign": "vcenter",
+            "fg_color": "#D4C2ED",
+            "border": 1,
+        }
+    )
 
-    description_row_width = 50
-    worksheet.set_column(3, 3, description_row_width)
+    orange_header_format = workbook.add_format(
+        {
+            "bold": True,
+            "text_wrap": True,
+            "align": "center",
+            "valign": "vcenter",
+            "fg_color": "#F3906B",
+            "border": 1,
+        }
+    )
 
-    # 5/F-14/O
-    # 5/F/Tia Inspection - 14/O/Site Total
-    worksheet.set_column(5, 14, row_width, currency_format)
+    # Write the column headers with the defined format
+    for col_num, value in enumerate(wanted_df.columns.values):
+        if col_num in [1, 2, 3, 4]:
+            worksheet.write(0, col_num, value, dark_purple_header_format)
+        elif col_num in [13, 15, 16]:
+            worksheet.write(0, col_num, value, blue_header_format)
+        elif col_num in [0, 17, 18]:
+            worksheet.write(0, col_num, value, orange_header_format)
+        else:
+            worksheet.write(0, col_num, value, light_purple_header_format)
 
-    # 15/P/Maintenance
-    worksheet.set_column(15, 15, row_width)
+    # # Define a number format with a thousands separator and two decimal places
+    # # The '#,##0.00' format string specifies a comma for thousands and two decimal places
+    currency_format = workbook.add_format(
+        {"num_format": "#,##0.00", "valign": "vcenter"}
+    )
+    align_format = workbook.add_format({"align": "center", "valign": "vcenter"})
+    v_align_format = workbook.add_format({"valign": "vcenter"})
+    xcans_format = workbook.add_format({"align": "left", "valign": "vcenter"})
 
-    # 16/Q/Manlift
-    worksheet.set_column(16, 16, row_width, currency_format)
+    # pprint(field.OUTPUT_COL_NUMS)
+    # |   'SORT_BY': 0,
+    # │   'BU': 1,
+    # │   'SUB CATEGORY': 2,
+    # │   'DESCRIPTION': 3,
+    # │   'QUANTITY': 4,
+    # │   'TIA Inspection': 5,
+    # │   'Additional Canister Price': 6,
+    # │   'HVF': 7,
+    # │   'Lighting Inspection Price': 8,
+    # │   'Migratory Bird': 9,
+    # │   'Windsim': 10,
+    # │   'TTP Initial Reading Price': 11,
+    # │   'Tension Price': 12,
+    # │   'HR.PAY': 13,
+    # │   'Site Total': 14,
+    # │   'MAINTENANCE': 15,
+    # │   'Manlift Charge': 16,
+    # │   'Structure': 17,
+    # │   'EXTRA_CANS': 18
+    # Set column widths for better visibility
+
+    for i, col in enumerate(wanted_df.columns):
+        if i in [
+            0,
+        ]:
+            worksheet.set_column(i, i, len(col) + 1, align_format)
+        elif i in [
+            1,
+        ]:
+            worksheet.set_column(i, i, len(col) + 7, align_format)
+        elif i in [
+            2,
+        ]:
+            worksheet.set_column(i, i, len(col) + 1, v_align_format)
+        elif i in [
+            3,
+        ]:
+            worksheet.set_column(i, i, len(col) + 40, v_align_format)
+        elif i in [7]:
+            worksheet.set_column(i, i, len(col) + 5, currency_format)
+        elif i in [5, 6, *range(8, 15), 16]:
+            worksheet.set_column(i, i, len(col) + 1, currency_format)
+        elif i in [15]:
+            worksheet.set_column(i, i, len(col) + 1, align_format)
+        elif i in [18]:
+            worksheet.set_column(i, i, len(col) + 1, xcans_format)
+        else:
+            worksheet.set_column(i, i, len(col) + 1, v_align_format)
 
     # Close the Pandas Excel writer and output the Excel file
     writer.close()

@@ -54,7 +54,7 @@ class MoneyColumnProcessor(BaseColumnProcessor):
     def __init__(self, row: pd.Series):
         super().__init__(row=row)
 
-    def _column_value_contains_valid_data(self) -> bool:
+    def _column_value_contains_valid_data(self) -> None:
         ensure.ensure_money(
             number=self._get_my_column_value(),
             col_name=self.column_name,
@@ -74,7 +74,7 @@ class IntColumnProcessor(BaseColumnProcessor):
     def __init__(self, row: pd.Series):
         super().__init__(row=row)
 
-    def _column_value_contains_valid_data(self) -> bool:
+    def _column_value_contains_valid_data(self) -> None:
         ensure.ensure_int(
             number=self._get_my_column_value(),
             col_name=self.column_name,
@@ -137,7 +137,7 @@ class EXTRA_CANSColumnProcessor(IntColumnProcessor):
         self.description = desc.ADDITIONAL_CAN
         self.column_name = field.EXTRA_CANS
 
-    def _column_value_contains_valid_data(self) -> bool:
+    def _column_value_contains_valid_data(self) -> None:
         super()._column_value_contains_valid_data()
         self.quantity = self._get_my_column_value()
 
@@ -149,7 +149,7 @@ class TENSIONColumnProcessor(MoneyColumnProcessor):
         self.description = None
         self.column_name = field.TENSION
 
-    def _column_value_contains_valid_data(self) -> bool:
+    def _column_value_contains_valid_data(self) -> None:
         super()._column_value_contains_valid_data()
 
         my_value = self._get_my_column_value()
@@ -167,3 +167,23 @@ class TENSIONColumnProcessor(MoneyColumnProcessor):
                 f"Unexpected Tension Price value: {my_value} on row\n{self.row}."
             )
             raise ValueError(unknown_tension_value)
+
+
+class MAINTColumnProcessor(BaseColumnProcessor):
+    def __init__(self, row: pd.Series):
+        super().__init__(row=row)
+        self.sub_category = subcat.ADDER
+        self.description = desc.MAINT_MIN_RATE
+        self.column_name = field.MAINT
+        self.time = None
+
+    def _column_value_contains_valid_data(self) -> None:
+        self.time = self._get_my_column_value()
+
+        # convert the value to an integer representing minutes
+        try:
+            # convert time object to total minutes
+            self.quantity = self.time.hour * 60 + self.time.minute
+        except ValueError as e:
+            maintenance_value_error = f"Unexpected {field.MAINT} value of: {self.time}. Expected H:MM time format."
+            raise ValueError(maintenance_value_error) from e
