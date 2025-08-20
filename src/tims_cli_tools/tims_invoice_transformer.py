@@ -2,14 +2,13 @@
 # in a format conducive to pasting into a copy of the submission template spreadsheet.
 
 import sys
-from datetime import datetime
+from datetime import datetime, time
 from pathlib import Path
-
 import pandas as pd
 import pytz
 from rich.pretty import pprint
-from toolz import curry
-from . import desc, field, price, subcat
+
+from . import field, subcat, classes
 
 
 def check_for_required_fields(
@@ -32,23 +31,6 @@ def get_new_row(*, bu: int, subcat: str, desc: str, qty: int = 1) -> dict:
         field.QUANTITY: qty,
     }
     return tmp_row
-
-
-@curry
-def ensure_data_type(*, data_type, func, number, col_name: str, row: pd.Series) -> bool:
-    """Make sure col with expected ints/floats have a legit value."""
-    try:
-        func(number)
-    except ValueError as e:
-        msg = f"Whoops, was expecting a {data_type} value in col '{col_name}' but got '{number}' on row:\n{row}"
-        raise ValueError(msg) from e
-    else:
-        return True
-
-
-# curried functions
-ensure_float = ensure_data_type(data_type="float", func=float)
-ensure_int = ensure_data_type(data_type="integer", func=int)
 
 
 def get_value_from_series_col(*, series: pd.Series, field_name: str):
@@ -97,150 +79,60 @@ def create_cleaned_filepath(
 
 def create_derived_rows_list(row: pd.Series) -> list[dict]:
     """Create derived rows based on the input row."""
-    current_bu = get_value_from_series_col(series=row, field_name=field.BU)
+
     current_sort_by = get_value_from_series_col(series=row, field_name=field.SORT_BY)
 
     new_rows = []
 
-    # Drop the NAN columns from the Series so we don't have to process them
+    # Drop the NAN columns from the Series so we don't process them
+    # NOTE: This keeps the column processors from raising a ValueError for
+    # getting called on a column with no value, and by not calling them, we don't
+    # get bogus extra rows added for empty columns!!
+    # WARNING: Do not remove!
     row = row.dropna()
 
     for col_name, col_value in row.items():
-        # if col_name == field.HVF_NO_SPACE and ensure_float(
-        #     number=col_value,
-        #     col_name=col_name,
-        #     row=row,
-        # ):
-        if col_name == field.HVF_NO_SPACE and ensure_data_type(
-            data_type="float",
-            func=float,
-            number=col_value,
-            col_name=col_name,
-            row=row,
-        ):
-            tmp_row = get_new_row(
-                bu=current_bu,
-                subcat=subcat.ADDER,
-                desc=desc.HEIGHT_VERIF,
-            )
-            new_rows.append(tmp_row)
+        if col_name == field.HVF_NO_SPACE:
+            new_rows.append(classes.HVFColumnProcessor(row=row).get_derived_row())
 
-        if col_name == field.LIGHT_INSP and ensure_float(
-            number=col_value,
-            col_name=col_name,
-            row=row,
-        ):
-            tmp_row = get_new_row(
-                bu=current_bu,
-                subcat=subcat.ADDER,
-                desc=desc.LIGHT_INSP,
-            )
-            new_rows.append(tmp_row)
-
-        if col_name == field.MIG_BIRD and ensure_float(
-            number=col_value,
-            col_name=col_name,
-            row=row,
-        ):
-            tmp_row = get_new_row(
-                bu=current_bu,
-                subcat=subcat.ADDER,
-                desc=desc.BIRD_WATCH,
-            )
-            new_rows.append(tmp_row)
-
-        if col_name == field.WINDSIM and ensure_float(
-            number=col_value,
-            col_name=col_name,
-            row=row,
-        ):
-            tmp_row = get_new_row(
-                bu=current_bu,
-                subcat=subcat.ADDER,
-                desc=desc.WINDSIM,
-            )
-            new_rows.append(tmp_row)
-
-        if col_name == field.TTP_INIT_READ and ensure_float(
-            number=col_value,
-            col_name=col_name,
-            row=row,
-        ):
-            tmp_row = get_new_row(
-                bu=current_bu,
-                subcat=subcat.ADDER,
-                desc=desc.GUY_TTP_INIT,
-            )
-            new_rows.append(tmp_row)
-
-        if col_name == field.TENSION and ensure_float(
-            number=col_value,
-            col_name=col_name,
-            row=row,
-        ):
-            # get a temp row and just change the desc below
-            tmp_row = get_new_row(
-                bu=current_bu,
-                subcat=subcat.ADDER,
-                desc=desc.GUY_TTP_1_6,
+        if col_name == field.LIGHT_INSP:
+            new_rows.append(
+                classes.LIGHT_INSPColumnProcessor(row=row).get_derived_row()
             )
 
-            # set the correct desc
-            if col_value == price.PRICE_700:
-                tmp_row[field.DESCRIPTION] = desc.GUY_TTP_1_6
-            elif col_value == price.PRICE_850:
-                tmp_row[field.DESCRIPTION] = desc.GUY_TTP_7_12
-            elif col_value == price.PRICE_1000:
-                tmp_row[field.DESCRIPTION] = desc.GUY_TTP_12_PLUS
-            else:
-                unknown_tension_value = (
-                    f"Unexpected Tension Price value: {col_value} on row\n{row}."
-                )
-                raise ValueError(unknown_tension_value)
-            new_rows.append(tmp_row)
+        if col_name == field.MIG_BIRD:
+            new_rows.append(classes.MIG_BIRDColumnProcessor(row=row).get_derived_row())
 
-        if col_name == field.MAINT:
-            # convert the value to an integer representing minutes
-            try:
-                # convert time object to total minutes
-                total_minutes = col_value.hour * 60 + col_value.minute
-            except ValueError as e:
-                maintenance_value_error = f"Unexpected {field.MAINT} value format: {col_value}. Expected 'H:MM' time format."
-                raise ValueError(maintenance_value_error) from e
-            if total_minutes > 0:  # only create a row if there are minutes to bill
-                tmp_row = get_new_row(
-                    bu=current_bu,
-                    subcat=subcat.ADDER,
-                    desc=desc.MAINT_MIN_RATE,
-                    qty=total_minutes,
-                )
-                new_rows.append(tmp_row)
+        if col_name == field.WINDSIM:
+            new_rows.append(classes.WINDSIMColumnProcessor(row=row).get_derived_row())
 
-        if col_name == field.EXTRA_CANS and ensure_int(
-            number=col_value,
-            col_name=col_name,
-            row=row,
-        ):
-            # set the quantity to the number of extra cans (value)
-            tmp_row = get_new_row(
-                bu=current_bu,
-                subcat=subcat.BASE,
-                desc=desc.ADDITIONAL_CAN,
-                qty=col_value,
+        if col_name == field.TTP_INIT_READ:
+            new_rows.append(
+                classes.TTP_INIT_READColumnProcessor(row=row).get_derived_row()
             )
-            new_rows.append(tmp_row)
 
-        if col_name == field.MAN_LIFT and ensure_float(
-            number=col_value,
-            col_name=col_name,
-            row=row,
+        if col_name == field.TENSION:
+            new_rows.append(classes.TENSIONColumnProcessor(row=row).get_derived_row())
+
+        if (
+            col_name == field.MAINT
+            and isinstance(col_value, time)
+            and (col_value.hour > 0 or col_value.minute > 0)
         ):
-            tmp_row = get_new_row(
-                bu=current_bu,
-                subcat=subcat.WORK_AUTH,
-                desc=desc.MANLIFT_RENTAL,
+            # this column comes into the dataframe as an object column
+            # during development I discovered that it will be converted to a datetime.time
+            # object if the value is '00:00:00 but with not all zeros; however, if it is
+            # all zeros, it gets converted/presented as a float. So, before we go off
+            # creating derived rows, we need to ensure we're dealing with a time object.
+            new_rows.append(classes.MAINTColumnProcessor(row=row).get_derived_row())
+
+        if col_name == field.EXTRA_CANS:
+            new_rows.append(
+                classes.EXTRA_CANSColumnProcessor(row=row).get_derived_row()
             )
-            new_rows.append(tmp_row)
+
+        if col_name == field.MAN_LIFT:
+            new_rows.append(classes.MAN_LIFTColumnProcessor(row=row).get_derived_row())
 
     # once we have the new rows, sort them by the subcategory and description
     new_rows.sort(key=lambda x: (x[field.SUB_CATEGORY], x[field.DESCRIPTION]))
@@ -253,7 +145,7 @@ def create_derived_rows_list(row: pd.Series) -> list[dict]:
     return new_rows
 
 
-def main() -> None:
+def main() -> None:  # noqa: PLR0912, PLR0915
     if len(sys.argv) < 2:  # noqa: PLR2004
         pprint(f"Usage: {sys.argv[0]} <input_file>")
         sys.exit(1)
@@ -301,15 +193,30 @@ def main() -> None:
     # reorder the columns to match the submission template
     wanted_df = wanted_df[field.OUTPUT_COLS]
 
+    #
     # now that we have the original data straightened out, let's get on with creating the derived rows
+    #
 
-    derived_rows = build_new_rows_from_dataframe_col_values(dataframe=wanted_df)
+    derived_rows = build_new_rows_from_dataframe_col_values(
+        dataframe=wanted_df.copy(deep=True)
+    )
     # build a dataframe so we can concat the new rows into the original rows
     derived_rows_df = pd.DataFrame(derived_rows)
     wanted_df = pd.concat([wanted_df, derived_rows_df], ignore_index=True)
 
     # sort the final dataframe so the rows are in the customer-specified order in the spreadsheet
     wanted_df = wanted_df.sort_values(by=[field.SORT_BY], ascending=True)
+
+    # now lets just reformat the maintenance col from hh:mm:ss to hh:mm, since it doesn't get
+    #  copy/pasted and is only for visual verification that our auto maintenance minute conversion
+    #  into quantity worked correctly.
+    def time_to_string(val):
+        """This "object" column has type of datatime.time if there is a value and float if empty."""
+        if isinstance(val, time):
+            return val.strftime("%H:%M")
+        return val
+
+    wanted_df[field.MAINT] = wanted_df[field.MAINT].apply(time_to_string)
 
     # create an output file path based upon the old file path but with a name that indicates the
     # output has been transformed and give it a new datetime each time so user can always see
@@ -320,5 +227,141 @@ def main() -> None:
         dt_with_tz=datetime.now(tz=pytz.timezone("US/Central")),
     )
 
-    wanted_df.to_excel(cleaned_path, index=False)
+    # Create a Pandas Excel writer using XlsxWriter as the engine
+    writer = pd.ExcelWriter(cleaned_path, engine="xlsxwriter")
+
+    # Convert the DataFrame to an XlsxWriter Excel object
+    # Export to Excel with the header row frozen
+    # The (1, 0) in freeze_panes means freeze everything above row 1 (i.e., row 0, which is the header)
+    # and everything to the left of column 0 (which is nothing in this case, effectively just freezing the top row).
+    wanted_df.to_excel(
+        writer,
+        sheet_name="Sheet1",
+        startrow=1,
+        header=False,
+        index=False,
+        # freeze_panes=(1, 0), Removed: user doesn't want this
+    )
+
+    workbook = writer.book
+    worksheet = writer.sheets["Sheet1"]
+
+    dark_purple_header_format = workbook.add_format(
+        {
+            "bold": True,
+            "text_wrap": True,
+            "align": "center",
+            "valign": "vcenter",
+            "font_color": "white",
+            "fg_color": "#700AAF",
+            "border": 1,
+        }
+    )
+
+    blue_header_format = workbook.add_format(
+        {
+            "bold": True,
+            "text_wrap": True,
+            "align": "center",
+            "valign": "vcenter",
+            "fg_color": "#B4CAF4",
+            "border": 1,
+        }
+    )
+
+    light_purple_header_format = workbook.add_format(
+        {
+            "bold": True,
+            "text_wrap": True,
+            "align": "center",
+            "valign": "vcenter",
+            "fg_color": "#D4C2ED",
+            "border": 1,
+        }
+    )
+
+    orange_header_format = workbook.add_format(
+        {
+            "bold": True,
+            "text_wrap": True,
+            "align": "center",
+            "valign": "vcenter",
+            "fg_color": "#F3906B",
+            "border": 1,
+        }
+    )
+
+    # Write the column headers with the defined format
+    for col_num, value in enumerate(wanted_df.columns.values):
+        if col_num in [1, 2, 3, 4]:
+            worksheet.write(0, col_num, value, dark_purple_header_format)
+        elif col_num in [13, 15, 16]:
+            worksheet.write(0, col_num, value, blue_header_format)
+        elif col_num in [0, 17, 18]:
+            worksheet.write(0, col_num, value, orange_header_format)
+        else:
+            worksheet.write(0, col_num, value, light_purple_header_format)
+
+    # # Define a number format with a thousands separator and two decimal places
+    # # The '#,##0.00' format string specifies a comma for thousands and two decimal places
+    currency_format = workbook.add_format(
+        {"num_format": "#,##0.00", "valign": "vcenter"}
+    )
+    align_format = workbook.add_format({"align": "center", "valign": "vcenter"})
+    v_align_format = workbook.add_format({"valign": "vcenter"})
+    xcans_format = workbook.add_format({"align": "left", "valign": "vcenter"})
+
+    # pprint({x: i for i, x in enumerate(field.OUTPUT_COLS)})
+    # |   'SORT_BY': 0,
+    # │   'BU': 1,
+    # │   'SUB CATEGORY': 2,
+    # │   'DESCRIPTION': 3,
+    # │   'QUANTITY': 4,
+    # │   'TIA Inspection': 5,
+    # │   'Additional Canister Price': 6,
+    # │   'HVF': 7,
+    # │   'Lighting Inspection Price': 8,
+    # │   'Migratory Bird': 9,
+    # │   'Windsim': 10,
+    # │   'TTP Initial Reading Price': 11,
+    # │   'Tension Price': 12,
+    # │   'HR.PAY': 13,
+    # │   'Site Total': 14,
+    # │   'MAINTENANCE': 15,
+    # │   'Manlift Charge': 16,
+    # │   'Structure': 17,
+    # │   'X_CANS': 18
+
+    # Set column widths for better visibility
+    for i, col in enumerate(wanted_df.columns):
+        if i in [
+            0,
+        ]:
+            worksheet.set_column(i, i, len(col) + 1, align_format)
+        elif i in [
+            1,
+        ]:
+            worksheet.set_column(i, i, len(col) + 7, align_format)
+        elif i in [
+            2,
+        ]:
+            worksheet.set_column(i, i, len(col) + 1, v_align_format)
+        elif i in [
+            3,
+        ]:
+            worksheet.set_column(i, i, len(col) + 40, v_align_format)
+        elif i in [7]:
+            worksheet.set_column(i, i, len(col) + 5, currency_format)
+        elif i in [5, 6, *range(8, 15), 16]:
+            worksheet.set_column(i, i, len(col) + 1, currency_format)
+        elif i in [15]:
+            worksheet.set_column(i, i, len(col) + 1, align_format)
+        elif i in [18]:
+            worksheet.set_column(i, i, len(col) + 1, xcans_format)
+        else:
+            worksheet.set_column(i, i, len(col) + 1, v_align_format)
+
+    # Close the Pandas Excel writer and output the Excel file
+    writer.close()
+
     pprint(f"Wrote new transformed spreadsheet at: {cleaned_path}")
