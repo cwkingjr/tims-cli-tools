@@ -231,8 +231,16 @@ def main() -> None:  # noqa: PLR0912, PLR0915
     writer = pd.ExcelWriter(cleaned_path, engine="xlsxwriter")
 
     # Convert the DataFrame to an XlsxWriter Excel object
+    # Export to Excel with the header row frozen
+    # The (1, 0) in freeze_panes means freeze everything above row 1 (i.e., row 0, which is the header)
+    # and everything to the left of column 0 (which is nothing in this case, effectively just freezing the top row).
     wanted_df.to_excel(
-        writer, sheet_name="Sheet1", startrow=1, header=False, index=False
+        writer,
+        sheet_name="Sheet1",
+        startrow=1,
+        header=False,
+        index=False,
+        freeze_panes=(1, 0),
     )
 
     workbook = writer.book
