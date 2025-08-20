@@ -66,5 +66,3 @@ OUTPUT_COLS = [
     STRUCTURE,  # leave this column so user can see what we the extra cans source data
     EXTRA_CANS,  # leave this column so the user can see how many extra cans we derived
 ]
-
-OUTPUT_COL_NUMS = {x: i for i, x in enumerate(OUTPUT_COLS)}

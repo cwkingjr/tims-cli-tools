@@ -240,7 +240,7 @@ def main() -> None:  # noqa: PLR0912, PLR0915
         startrow=1,
         header=False,
         index=False,
-        freeze_panes=(1, 0),
+        # freeze_panes=(1, 0), Removed: user doesn't want this
     )
 
     workbook = writer.book
@@ -311,7 +311,7 @@ def main() -> None:  # noqa: PLR0912, PLR0915
     v_align_format = workbook.add_format({"valign": "vcenter"})
     xcans_format = workbook.add_format({"align": "left", "valign": "vcenter"})
 
-    # pprint(field.OUTPUT_COL_NUMS)
+    # pprint({x: i for i, x in enumerate(field.OUTPUT_COLS)})
     # |   'SORT_BY': 0,
     # │   'BU': 1,
     # │   'SUB CATEGORY': 2,
@@ -330,9 +330,9 @@ def main() -> None:  # noqa: PLR0912, PLR0915
     # │   'MAINTENANCE': 15,
     # │   'Manlift Charge': 16,
     # │   'Structure': 17,
-    # │   'EXTRA_CANS': 18
-    # Set column widths for better visibility
+    # │   'X_CANS': 18
 
+    # Set column widths for better visibility
     for i, col in enumerate(wanted_df.columns):
         if i in [
             0,
