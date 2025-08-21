@@ -17,7 +17,11 @@ tims_invoice_transformer = "tims_cli_tools.tims_invoice_transformer:main"
 tims_bu_info = "tims_cli_tools.tims_bu_info:main"
 
 [dependency-groups]
-dev = ["pytest>=8.4.1", "ruff>=0.12.9"]
+dev = [
+    "coverage>=7.10.4",
+    "pytest>=8.4.1",
+    "ruff>=0.12.9",
+]
 
 [tool.ruff]
 target-version = "py313"
