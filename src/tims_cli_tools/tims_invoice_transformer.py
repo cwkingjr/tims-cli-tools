@@ -8,7 +8,7 @@ import pandas as pd
 import pytz
 from rich.pretty import pprint
 
-from . import field, subcat, classes
+from . import field, invoice_classes, subcat
 
 
 def check_for_required_fields(
@@ -93,26 +93,34 @@ def create_derived_rows_list(row: pd.Series) -> list[dict]:
 
     for col_name, col_value in row.items():
         if col_name == field.HVF_NO_SPACE:
-            new_rows.append(classes.HVFColumnProcessor(row=row).get_derived_row())
+            new_rows.append(
+                invoice_classes.HVFColumnProcessor(row=row).get_derived_row()
+            )
 
         if col_name == field.LIGHT_INSP:
             new_rows.append(
-                classes.LIGHT_INSPColumnProcessor(row=row).get_derived_row()
+                invoice_classes.LIGHT_INSPColumnProcessor(row=row).get_derived_row()
             )
 
         if col_name == field.MIG_BIRD:
-            new_rows.append(classes.MIG_BIRDColumnProcessor(row=row).get_derived_row())
+            new_rows.append(
+                invoice_classes.MIG_BIRDColumnProcessor(row=row).get_derived_row()
+            )
 
         if col_name == field.WINDSIM:
-            new_rows.append(classes.WINDSIMColumnProcessor(row=row).get_derived_row())
+            new_rows.append(
+                invoice_classes.WINDSIMColumnProcessor(row=row).get_derived_row()
+            )
 
         if col_name == field.TTP_INIT_READ:
             new_rows.append(
-                classes.TTP_INIT_READColumnProcessor(row=row).get_derived_row()
+                invoice_classes.TTP_INIT_READColumnProcessor(row=row).get_derived_row()
             )
 
         if col_name == field.TENSION:
-            new_rows.append(classes.TENSIONColumnProcessor(row=row).get_derived_row())
+            new_rows.append(
+                invoice_classes.TENSIONColumnProcessor(row=row).get_derived_row()
+            )
 
         if (
             col_name == field.MAINT
@@ -124,15 +132,19 @@ def create_derived_rows_list(row: pd.Series) -> list[dict]:
             # object if the value is '00:00:00 but with not all zeros; however, if it is
             # all zeros, it gets converted/presented as a float. So, before we go off
             # creating derived rows, we need to ensure we're dealing with a time object.
-            new_rows.append(classes.MAINTColumnProcessor(row=row).get_derived_row())
+            new_rows.append(
+                invoice_classes.MAINTColumnProcessor(row=row).get_derived_row()
+            )
 
         if col_name == field.EXTRA_CANS:
             new_rows.append(
-                classes.EXTRA_CANSColumnProcessor(row=row).get_derived_row()
+                invoice_classes.EXTRA_CANSColumnProcessor(row=row).get_derived_row()
             )
 
         if col_name == field.MAN_LIFT:
-            new_rows.append(classes.MAN_LIFTColumnProcessor(row=row).get_derived_row())
+            new_rows.append(
+                invoice_classes.MAN_LIFTColumnProcessor(row=row).get_derived_row()
+            )
 
     # once we have the new rows, sort them by the subcategory and description
     new_rows.sort(key=lambda x: (x[field.SUB_CATEGORY], x[field.DESCRIPTION]))
