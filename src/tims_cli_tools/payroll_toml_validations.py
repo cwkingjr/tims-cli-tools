@@ -28,43 +28,20 @@ def get_process_logging(*, process_logging) -> bool:
         return False
 
 
-def print_crew_lead_info(*, crew_leads) -> None:
-    """Print crew lead info to command line."""
-    crew_lead_names = sorted(
-        [x[NAME] + " (" + x[PAY_TYPE_KEY] + ")" for x in crew_leads]
-    )
-    pprint(f"Found crew leads: {crew_lead_names}")
-
-
-def print_crew_second_info(*, crew_seconds) -> None:
-    """Print crew second info to command line."""
-    crew_second_info = sorted(
-        [
-            x[NAME] + " (" + x[PAY_TYPE_KEY] + ") with " + x[CREW_LEAD_NAME]
-            for x in crew_seconds
-        ]
-    )
-    pprint(f"Found crew seconds: {crew_second_info}")
-
-
 def verify_crew_lead_pay_types_are_valid(*, crew_leads) -> None:
     """Pay types must match one of valid types."""
     for x in crew_leads:
         if x[PAY_TYPE_KEY] not in field.PAYROLL_VALID_CREW_LEAD_PAY_TYPES:
-            pprint(
-                f"ERROR: Found crew lead '{x[NAME]}' with invalid pay_key_type of '{x[PAY_TYPE_KEY]}'."
-            )
-            sys.exit(1)
+            msg = f"ERROR: Found crew lead '{x[NAME]}' with invalid pay_key_type of '{x[PAY_TYPE_KEY]}'."
+            raise ValueError(msg)
 
 
 def verify_crew_second_pay_types_are_valid(*, crew_seconds) -> None:
     """Pay types must match one of valid types."""
     for x in crew_seconds:
         if x[PAY_TYPE_KEY] not in field.PAYROLL_VALID_CREW_SECOND_PAY_TYPES:
-            pprint(
-                f"ERROR: Found crew second '{x[NAME]}' with invalid pay_key_type of '{x[PAY_TYPE_KEY]}'."
-            )
-            sys.exit(1)
+            msg = f"ERROR: Found crew second '{x[NAME]}' with invalid pay_key_type of '{x[PAY_TYPE_KEY]}'."
+            raise ValueError(msg)
 
 
 def verify_crew_leads_listed_in_seconds_exist(*, crew_seconds, crew_leads) -> None:
@@ -72,10 +49,8 @@ def verify_crew_leads_listed_in_seconds_exist(*, crew_seconds, crew_leads) -> No
 
     for x in crew_seconds:
         if x[CREW_LEAD_NAME] not in crew_lead_names:
-            pprint(
-                f"ERROR: Found non-existent crew lead of '{x[CREW_LEAD_NAME]}' for crew second '{x[NAME]}'."
-            )
-            sys.exit(1)
+            msg = f"ERROR: Found non-existent crew lead of '{x[CREW_LEAD_NAME]}' for crew second '{x[NAME]}'."
+            raise ValueError(msg)
 
 
 def verify_same_number_of_leads_and_seconds(*, crew_seconds, crew_leads) -> None:
@@ -83,10 +58,8 @@ def verify_same_number_of_leads_and_seconds(*, crew_seconds, crew_leads) -> None
     lead_count = len(crew_leads)
     second_count = len(crew_seconds)
     if lead_count != second_count:
-        pprint(
-            f"ERROR: Found mismatching number of leads ({lead_count}) and seconds ({second_count})."
-        )
-        sys.exit(1)
+        msg = f"ERROR: Found mismatching number of leads ({lead_count}) and seconds ({second_count})."
+        raise ValueError(msg)
 
 
 def verify_no_duplicate_second_names(*, crew_seconds) -> None:
@@ -95,12 +68,9 @@ def verify_no_duplicate_second_names(*, crew_seconds) -> None:
     if len(seconds_names) != len(set(seconds_names)):
         # hmm. we have at least one duplicate name
         # so lets push out the list by counts
-        pprint(
-            "ERROR: Whoops, found at least one set of duplicated second names. Please fix the config file and try again."
-        )
         name_counts = Counter(seconds_names)
-        pprint(f"{name_counts}")
-        sys.exit(1)
+        msg = f"ERROR: Whoops, found at least one set of duplicated second names. Please fix the config file and try again. {name_counts}"
+        raise ValueError(msg)
 
 
 def verify_no_duplicate_lead_names(*, crew_leads) -> None:
@@ -109,12 +79,9 @@ def verify_no_duplicate_lead_names(*, crew_leads) -> None:
     if len(lead_names) != len(set(lead_names)):
         # hmm. we have at least one duplicate name
         # so lets push out the list by counts
-        pprint(
-            "ERROR: Whoops, found at least one set of duplicated lead names. Please fix the config file and try again."
-        )
         name_counts = Counter(lead_names)
-        pprint(f"{name_counts}")
-        sys.exit(1)
+        msg = f"ERROR: Whoops, found at least one set of duplicated lead names. Please fix the config file and try again. {name_counts}"
+        raise ValueError(msg)
 
 
 def verify_no_duplicate_second_crew_lead_names(*, crew_seconds) -> None:
@@ -123,9 +90,6 @@ def verify_no_duplicate_second_crew_lead_names(*, crew_seconds) -> None:
     if len(names) != len(set(names)):
         # hmm. we have at least one duplicate name
         # so lets push out the list by counts
-        pprint(
-            "ERROR: Whoops, found at least one set of duplicated second crew lead names. Please fix the config file and try again."
-        )
         name_counts = Counter(names)
-        pprint(f"{name_counts}")
-        sys.exit(1)
+        msg = f"ERROR: Whoops, found at least one set of duplicated second crew lead names. Please fix the config file and try again. {name_counts}"
+        raise ValueError(msg)

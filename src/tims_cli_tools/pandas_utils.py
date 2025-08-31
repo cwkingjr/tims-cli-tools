@@ -1,4 +1,5 @@
 import pandas as pd
+from rich.pretty import pprint
 
 
 def check_for_required_fields(
@@ -25,3 +26,10 @@ def get_value_from_series_col(*, series: pd.Series, column_name: str):
         raise ValueError(msg)
 
     return mylist[0]
+
+
+def pprint_as_dataframe(*, message=None, content) -> None:
+    """Pretty Prints message if provided, then content as pd.Dataframe."""
+    if message:
+        pprint(message)
+    pprint(pd.DataFrame(data=content))

@@ -71,7 +71,7 @@ JSON_SCHEMA_STR = """
         "windsim": {
           "type": "number"
         },
-        "ttp_inititial_reading": {
+        "ttp_initial_reading": {
           "type": "number"
         },
         "tension_700": {
@@ -96,7 +96,7 @@ JSON_SCHEMA_STR = """
         "tension_1000",
         "tension_700",
         "tension_850",
-        "ttp_inititial_reading",
+        "ttp_initial_reading",
         "windsim"
       ]
     },
