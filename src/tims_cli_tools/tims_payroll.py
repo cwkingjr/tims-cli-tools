@@ -10,15 +10,18 @@ from . import (
     file_utils,
     payroll_toml_json_schema,
     payroll_toml_validations as ptv,
+    payroll_spreadsheets,
     payroll_sql,
 )
 from .payroll_classes import (
+    Crews,
     build_crews,
     build_additional_pay,
 )
 import io
 import json
 import duckdb
+from duckdb import DuckDBPyConnection
 
 CONFIG_FILE = Path.home() / ".config/tims_tools/tims_payroll.toml"
 DB_FILE = Path.home() / ".config/tims_tools/tmp_payroll.db"
@@ -27,99 +30,16 @@ DB_FILE = Path.home() / ".config/tims_tools/tmp_payroll.db"
 # TODO: create consolidated output spreadsheet
 # TODO: create individual crew member spreadsheets
 # TODO: refactor across apps and create/update all tests
-# TODO: add justfile, coverage,
-# TODO: Update all readme files
 
 
-def main() -> None:  # noqa: PLR0912, PLR0915
-    if len(sys.argv) < 2:  # noqa: PLR2004
-        pprint(f"Usage: {sys.argv[0]} <input_file>")
-        sys.exit(1)
+def bogus_for_coverage() -> str:
+    """Bogus fn to get this file added to coverage."""
+    return "TODO: Delete me."
 
-    in_file = sys.argv[1]
-    input_df = pd.read_excel(in_file)
 
-    #
-    # Process the config info
-    #
-
-    pprint(f"Loading config file data from {CONFIG_FILE}.")
-    toml_data = file_utils.get_toml_data(config_path=CONFIG_FILE)
-    json_schema = json.load(io.StringIO(payroll_toml_json_schema.JSON_SCHEMA_STR))
-
-    pprint("Validating config file against config file data schema.")
-    file_utils.validate_toml_data(toml_data=toml_data, json_schema=json_schema)
-
-    create_crew_spreadsheets = toml_data["processing_info"]["create_crew_spreadsheets"]
-    create_crew_spreadsheets = ptv.get_create_crew_spreadsheets(
-        create_crew_spreadsheets=create_crew_spreadsheets
-    )
-
-    process_logging = toml_data["processing_info"]["process_logging"]
-    process_logging = ptv.get_process_logging(process_logging=process_logging)
-
-    crew_leads = toml_data["crew_lead"]
-    crew_seconds = toml_data["crew_second"]
-    pay_types = toml_data["pay_type"]
-    additional_pay = toml_data["additional_pay"]
-
-    pprint("Checking configuration information for errors and rule violations.")
-
-    ptv.verify_crew_lead_pay_types_are_valid(crew_leads=crew_leads)
-    ptv.verify_crew_second_pay_types_are_valid(crew_seconds=crew_seconds)
-    ptv.verify_crew_leads_listed_in_seconds_exist(
-        crew_seconds=crew_seconds, crew_leads=crew_leads
-    )
-    ptv.verify_same_number_of_leads_and_seconds(
-        crew_seconds=crew_seconds, crew_leads=crew_leads
-    )
-    ptv.verify_no_duplicate_second_names(crew_seconds=crew_seconds)
-    ptv.verify_no_duplicate_lead_names(crew_leads=crew_leads)
-    ptv.verify_no_duplicate_second_crew_lead_names(crew_seconds=crew_seconds)
-
-    pandas_utils.pprint_as_dataframe(
-        message="Found these pay types:", content=pay_types
-    )
-
-    #
-    # Build out some data structures to make it easier to process rows
-    #
-
-    crews = build_crews(
-        config_crew_leads=crew_leads,
-        config_crew_seconds=crew_seconds,
-        config_pay_types=pay_types,
-    )
-    pprint("Found config data for these crews:")
-    pprint(crews)
-
-    add_pay = build_additional_pay(config_add_pay=additional_pay)
-    pprint("Found config data for these additional pay rates:")
-    pprint(add_pay)
-
-    db_file = Path(DB_FILE)
-
-    if db_file.exists():
-        try:
-            db_file.unlink()
-        except OSError as e:
-            pprint(f"Error deleting file '{DB_FILE}': {e}")
-
-    # add an "EXTRA_CANS" column that includes the value from the structure column only if that column includes an integer value
-    # the first can is part of the base price, so we subtract 1 from the value
-    input_df[field.EXTRA_CANS] = input_df[field.STRUCTURE].apply(
-        lambda x: x - 1 if isinstance(x, int) and x - 1 > 0 else None,
-    )
-
-    # Convert column to dataframe int type that can handle NaN values as we were getting floats before
-    input_df[field.EXTRA_CANS] = input_df[field.EXTRA_CANS].astype(pd.Int64Dtype())
-
-    con = duckdb.connect(database=DB_FILE)
-
-    con.execute(payroll_sql.CREATE_PAYMENTS_TABLE_SEQUENCE)
-    con.execute(payroll_sql.CREATE_PAYMENTS_TABLE_SQL)
-
-    for _, row in input_df.iterrows():
+def load_payments_into_db(*, con: DuckDBPyConnection, df: pd.DataFrame, crews, add_pay):  # noqa: PLR0912,PLR0915
+    """Process the rows and write payments records into database."""
+    for _, row in df.iterrows():
         bu = pandas_utils.get_value_from_series_col(series=row, column_name=field.BU)
 
         inspection_date = pandas_utils.get_value_from_series_col(
@@ -259,7 +179,7 @@ def main() -> None:  # noqa: PLR0912, PLR0915
         #
 
         payroll_sql.insert_payment(
-            connection=con,
+            con=con,
             bu=bu,
             inspection_date=inspection_date,
             crew_lead=lead_name,
@@ -283,7 +203,7 @@ def main() -> None:  # noqa: PLR0912, PLR0915
         #
 
         payroll_sql.insert_payment(
-            connection=con,
+            con=con,
             bu=bu,
             inspection_date=inspection_date,
             crew_lead=lead_name,
@@ -300,6 +220,132 @@ def main() -> None:  # noqa: PLR0912, PLR0915
             site_total=second_site_total,
             maintenance=maint,
             extra_cans=extra_cans_count,
+        )
+
+
+def get_pay_to_dataframes(
+    *, con: DuckDBPyConnection, crews: Crews
+) -> list[tuple[str, pd.DataFrame]]:
+    """Returns a list of tuples that contain the payee name and the payee dataframe."""
+    payee_tuples = []  # (name, dataframe)
+
+    for crew in crews.crews:
+        lead_tuple = payroll_sql.get_payments_by_pay_to(con=con, pay_to=crew.lead.name)
+        payee_tuples.append(lead_tuple)
+        second_tuple = payroll_sql.get_payments_by_pay_to(
+            con=con, pay_to=crew.second.name
+        )
+        payee_tuples.append(second_tuple)
+    return payee_tuples
+
+
+def main() -> None:
+    if len(sys.argv) < 2:  # noqa: PLR2004
+        pprint(f"Usage: {sys.argv[0]} <input_file>")
+        sys.exit(1)
+
+    in_file = sys.argv[1]
+    input_df = pd.read_excel(in_file)
+
+    #
+    # Process the config info
+    #
+
+    pprint(f"Loading config file data from {CONFIG_FILE}.")
+    toml_data = file_utils.get_toml_data(config_path=CONFIG_FILE)
+    json_schema = json.load(io.StringIO(payroll_toml_json_schema.JSON_SCHEMA_STR))
+
+    pprint("Validating config file against config file data schema.")
+    file_utils.validate_toml_data(toml_data=toml_data, json_schema=json_schema)
+
+    create_crew_spreadsheets = toml_data["processing_info"]["create_crew_spreadsheets"]
+    create_crew_spreadsheets = ptv.get_create_crew_spreadsheets(
+        create_crew_spreadsheets=create_crew_spreadsheets
+    )
+
+    process_logging = toml_data["processing_info"]["process_logging"]
+    process_logging = ptv.get_process_logging(process_logging=process_logging)
+
+    crew_leads = toml_data["crew_lead"]
+    crew_seconds = toml_data["crew_second"]
+    pay_types = toml_data["pay_type"]
+    additional_pay = toml_data["additional_pay"]
+
+    pprint("Checking configuration information for errors and rule violations.")
+
+    ptv.verify_crew_lead_pay_types_are_valid(crew_leads=crew_leads)
+    ptv.verify_crew_second_pay_types_are_valid(crew_seconds=crew_seconds)
+    ptv.verify_crew_leads_listed_in_seconds_exist(
+        crew_seconds=crew_seconds, crew_leads=crew_leads
+    )
+    ptv.verify_same_number_of_leads_and_seconds(
+        crew_seconds=crew_seconds, crew_leads=crew_leads
+    )
+    ptv.verify_no_duplicate_second_names(crew_seconds=crew_seconds)
+    ptv.verify_no_duplicate_lead_names(crew_leads=crew_leads)
+    ptv.verify_no_duplicate_second_crew_lead_names(crew_seconds=crew_seconds)
+
+    pandas_utils.pprint_as_dataframe(
+        message="Found these pay types:", content=pay_types
+    )
+
+    #
+    # Build out some data structures to make it easier to process rows
+    #
+
+    crews = build_crews(
+        config_crew_leads=crew_leads,
+        config_crew_seconds=crew_seconds,
+        config_pay_types=pay_types,
+    )
+    pprint("Found config data for these crews:")
+    pprint(crews)
+
+    add_pay = build_additional_pay(config_add_pay=additional_pay)
+    pprint("Found config data for these additional pay rates:")
+    pprint(add_pay)
+
+    db_file = Path(DB_FILE)
+
+    if db_file.exists():
+        try:
+            db_file.unlink()
+        except OSError as e:
+            pprint(f"Error deleting file '{DB_FILE}': {e}")
+
+    # add an "EXTRA_CANS" column that includes the value from the structure column only if that column includes an integer value
+    # the first can is part of the base price, so we subtract 1 from the value
+    input_df[field.EXTRA_CANS] = input_df[field.STRUCTURE].apply(
+        lambda x: x - 1 if isinstance(x, int) and x - 1 > 0 else None,
+    )
+
+    # Convert column to dataframe int type that can handle NaN values as we were getting floats before
+    input_df[field.EXTRA_CANS] = input_df[field.EXTRA_CANS].astype(pd.Int64Dtype())
+
+    con = duckdb.connect(database=DB_FILE)
+    con.execute(payroll_sql.CREATE_PAYMENTS_TABLE_SEQUENCE)
+    con.execute(payroll_sql.CREATE_PAYMENTS_TABLE_SQL)
+
+    load_payments_into_db(con=con, df=input_df, crews=crews, add_pay=add_pay)
+
+    all_payments_df = payroll_sql.get_all_payments(con=con)
+    all_payments_totals = payroll_sql.get_all_payments_totals(con=con)
+    payee_tuples = get_pay_to_dataframes(con=con, crews=crews)
+
+    payroll_spreadsheets.write_consolidated_spreadsheet(
+        original_df=input_df,
+        all_payments_df=all_payments_df,
+        all_payments_totals_df=all_payments_totals,
+        payee_tuples=payee_tuples,
+    )
+
+    for one_tuple in payee_tuples:
+        pay_to, payee_df = one_tuple
+        ind_tots_df = payroll_sql.get_individual_payments_totals(con=con, pay_to=pay_to)
+        payroll_spreadsheets.write_individual_spreadsheet(
+            pay_to_name=pay_to,
+            individual_payments_totals_df=ind_tots_df,
+            individual_payments_df=payee_df,
         )
 
     con.close()

@@ -19,7 +19,7 @@ dependencies = [
 ]
 
 [project.scripts]
-tims_invoice_transformer = "tims_cli_tools.tims_invoice_transformer:main"
+tims_invoice = "tims_cli_tools.tims_invoice:main"
 tims_bu_info = "tims_cli_tools.tims_bu_info:main"
 tims_payroll = "tims_cli_tools.tims_payroll:main"
 

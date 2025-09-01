@@ -3,11 +3,10 @@
 
 import sys
 from datetime import datetime, time
-from pathlib import Path
 import pandas as pd
 import pytz
 from rich.pretty import pprint
-
+from .file_utils import create_cleaned_filepath
 from . import field, invoice_classes, subcat, pandas_utils
 
 
@@ -45,25 +44,6 @@ def build_new_rows_from_dataframe_col_values(*, dataframe: pd.DataFrame) -> list
         if one_rows_new_rows:
             all_new_rows.extend(one_rows_new_rows)
     return all_new_rows
-
-
-def create_cleaned_filepath(
-    *,
-    in_path=Path,
-    filename_prefix: str,
-    dt_with_tz: datetime,
-    dt_format_str="%Y%m%d_%H%M%S",
-) -> Path:
-    """Create a new filepath with cleaned up and appended filename."""
-    path = Path(in_path)
-    filename_no_extension = path.stem
-    filename_extension = path.suffix
-    path_parent = path.parent
-    add_to_filename = f"_{filename_prefix}_{dt_with_tz.strftime(dt_format_str)}"
-    cleaned_filename = filename_no_extension.strip().replace(" ", "_")
-    new_filename = cleaned_filename + add_to_filename + filename_extension
-    cleaned_full_path = path_parent / new_filename
-    return cleaned_full_path
 
 
 def create_derived_rows_list(row: pd.Series) -> list[dict]:
@@ -226,7 +206,7 @@ def main() -> None:  # noqa: PLR0912, PLR0915
     # when it was generated
     cleaned_path = create_cleaned_filepath(
         in_path=in_file,
-        filename_prefix="_transformed",
+        filename_prefix="_transformed_invoice",
         dt_with_tz=datetime.now(tz=pytz.timezone("US/Central")),
     )
 
