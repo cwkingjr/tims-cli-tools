@@ -1,16 +1,18 @@
 import sys
-from datetime import datetime, time
+from datetime import datetime, date, time
 from pathlib import Path
 import pandas as pd
 import pytz
 from rich.pretty import pprint
 from . import (
     field,
+    price,
     pandas_utils,
     file_utils,
     payroll_toml_json_schema,
     payroll_toml_validations as ptv,
     payroll_classes,
+    payroll_sql,
 )
 from .payroll_classes import (
     build_crews,
@@ -18,13 +20,12 @@ from .payroll_classes import (
 )
 import io
 import json
+import duckdb
 
 CONFIG_FILE = Path.home() / ".config/tims_tools/tims_payroll.toml"
+DB_FILE = Path.home() / ".config/tims_tools/tmp_payroll.db"
 
 # TODO: Add arg parsing for input file, maybe individual spreadsheets, config file validation only
-# TODO: read input spreadsheet, grab needed columns, generate new cols
-# TODO: create in-memory database, table(s)
-# TODO: for each row, create db row for each crew member with zeros, then update columns based upon column processing
 # TODO: create consolidated output spreadsheet
 # TODO: create individual crew member spreadsheets
 # TODO: refactor across apps and create/update all tests
@@ -33,12 +34,12 @@ CONFIG_FILE = Path.home() / ".config/tims_tools/tims_payroll.toml"
 
 
 def main() -> None:  # noqa: PLR0912, PLR0915
-    # if len(sys.argv) < 2:  # noqa: PLR2004
-    #     pprint(f"Usage: {sys.argv[0]} <input_file>")
-    #     sys.exit(1)
+    if len(sys.argv) < 2:  # noqa: PLR2004
+        pprint(f"Usage: {sys.argv[0]} <input_file>")
+        sys.exit(1)
 
-    # in_file = sys.argv[1]
-    # input_df = pd.read_excel(in_file)
+    in_file = sys.argv[1]
+    input_df = pd.read_excel(in_file)
 
     #
     # Process the config info
@@ -82,7 +83,9 @@ def main() -> None:  # noqa: PLR0912, PLR0915
         message="Found these pay types:", content=pay_types
     )
 
+    #
     # Build out some data structures to make it easier to process rows
+    #
 
     crews = build_crews(
         config_crew_leads=crew_leads,
@@ -96,11 +99,210 @@ def main() -> None:  # noqa: PLR0912, PLR0915
     pprint("Found config data for these additional pay rates:")
     pprint(add_pay)
 
-    # Load up the spreadsheet data
+    db_file = Path(DB_FILE)
 
-    # pandas_utils.check_for_required_fields(
-    #     required_fields=field.PAYROLL_REQUIRED_INPUT_COLS, pd_df=input_df
-    # )
+    if db_file.exists():
+        try:
+            db_file.unlink()
+        except OSError as e:
+            pprint(f"Error deleting file '{DB_FILE}': {e}")
 
-    # # typically the provided spreadsheet has more columns than we need, so we select only the ones we need
-    # wanted_df = input_df[field.PAYROLL_REQUIRED_INPUT_COLS]
+    # add an "EXTRA_CANS" column that includes the value from the structure column only if that column includes an integer value
+    # the first can is part of the base price, so we subtract 1 from the value
+    input_df[field.EXTRA_CANS] = input_df[field.STRUCTURE].apply(
+        lambda x: x - 1 if isinstance(x, int) and x - 1 > 0 else None,
+    )
+
+    # Convert column to dataframe int type that can handle NaN values as we were getting floats before
+    input_df[field.EXTRA_CANS] = input_df[field.EXTRA_CANS].astype(pd.Int64Dtype())
+
+    con = duckdb.connect(database=DB_FILE)
+
+    con.execute(payroll_sql.CREATE_PAYMENTS_TABLE_SEQUENCE)
+    con.execute(payroll_sql.CREATE_PAYMENTS_TABLE_SQL)
+
+    for _, row in input_df.iterrows():
+        bu = pandas_utils.get_value_from_series_col(series=row, column_name=field.BU)
+
+        inspection_date = pandas_utils.get_value_from_series_col(
+            series=row, column_name=field.DATE
+        )
+
+        crew_lead = pandas_utils.get_value_from_series_col(
+            series=row, column_name=field.CREW
+        )
+
+        tia_inspection = pandas_utils.get_value_from_series_col(
+            series=row, column_name=field.TIA_INSP
+        )
+
+        extra_cans = pandas_utils.get_value_from_series_col(
+            series=row, column_name=field.EXTRA_CANS
+        )
+        if not isinstance(extra_cans, int | float):
+            additional_canister_level_pay = 0.0
+            extra_cans_count = 0
+        elif int(extra_cans) > 0:
+            additional_canister_level_pay = add_pay.extra_cans_each * extra_cans
+            extra_cans_count = int(extra_cans)
+        else:
+            additional_canister_level_pay = 0.0
+            extra_cans_count = 0
+
+        hvf = pandas_utils.get_value_from_series_col(
+            series=row, column_name=field.HVF_WITH_SPACE
+        )
+        if not isinstance(hvf, int | float):
+            hvf_pay = 0.0
+        elif float(hvf) > 0.0:
+            hvf_pay = add_pay.hvf
+        else:
+            hvf_pay = 0.0
+
+        lighting_inspection_price = pandas_utils.get_value_from_series_col(
+            series=row, column_name=field.LIGHT_INSP
+        )
+        if not isinstance(lighting_inspection_price, int | float):
+            lighting_inspection_pay = 0.0
+        elif float(lighting_inspection_price) > 0.0:
+            lighting_inspection_pay = add_pay.lighting_inspection
+        else:
+            lighting_inspection_pay = 0.0
+
+        migratory_bird = pandas_utils.get_value_from_series_col(
+            series=row, column_name=field.MIG_BIRD
+        )
+        if not isinstance(migratory_bird, int | float):
+            migratory_bird_pay = 0.0
+        elif float(migratory_bird) > 0.0:
+            migratory_bird_pay = add_pay.migratory_bird
+        else:
+            migratory_bird_pay = 0.0
+
+        windsim = pandas_utils.get_value_from_series_col(
+            series=row, column_name=field.WINDSIM
+        )
+        if not isinstance(windsim, int | float):
+            windsim_pay = 0.0
+        elif float(windsim) > 0.0:
+            windsim_pay = add_pay.windsim
+        else:
+            windsim_pay = 0.0
+
+        tension = pandas_utils.get_value_from_series_col(
+            series=row, column_name=field.TENSION
+        )
+        if not isinstance(migratory_bird, int | float):
+            tension_pay = 0.0
+        elif float(tension) == price.PRICE_700:
+            tension_pay = add_pay.tension_700
+        elif float(tension) == price.PRICE_850:
+            tension_pay = add_pay.tension_850
+        elif float(tension) == price.PRICE_1000:
+            tension_pay = add_pay.tension_1000
+        else:
+            tension_pay = 0.0
+
+        maint = pandas_utils.get_value_from_series_col(
+            series=row, column_name=field.MAINT
+        )
+        if isinstance(maint, time) and (maint.hour > 0 or maint.minute > 0):
+            minutes = maint.hour * 60 + maint.minute
+            pay_per_minute = add_pay.hr_pay_per_hour / 60
+            hr_pay_pay = minutes * pay_per_minute
+        else:
+            hr_pay_pay = 0.0
+
+        ecs_concealment_type = pandas_utils.get_value_from_series_col(
+            series=row, column_name=field.ECS_CONCEALMENT_TYPE
+        )
+
+        structure_type = pandas_utils.get_value_from_series_col(
+            series=row, column_name=field.STRUCTURE_TYPE
+        )
+        structure_type = structure_type.strip()
+        if (
+            structure_type.lower() == "mp"
+            and isinstance(ecs_concealment_type, str)
+            and ecs_concealment_type.strip().lower() == "flagpole"
+        ):
+            structure_type = "MP_CANS"
+
+        my_crew = crews.get_crew_by_lead_spreadsheet_name(
+            spreadsheet_name=crew_lead.strip()
+        )
+        lead_name = my_crew.lead.name
+        second_name = my_crew.second.name
+
+        if not isinstance(tia_inspection, int | float):
+            tia_inspection = 0.0
+        else:
+            # This will be the pay for the structure type based upon the person's PayType
+            tia_inspection_lead = my_crew.lead.pay_type.get_pay_by_str(structure_type)
+            tia_inspection_second = my_crew.second.pay_type.get_pay_by_str(
+                structure_type
+            )
+
+        common_total = (
+            additional_canister_level_pay
+            + hvf_pay
+            + lighting_inspection_pay
+            + migratory_bird_pay
+            + windsim_pay
+            + tension_pay
+            + hr_pay_pay
+        )
+
+        lead_site_total = tia_inspection_lead + common_total
+        second_site_total = tia_inspection_second + common_total
+
+        #
+        # pay the lead
+        #
+
+        payroll_sql.insert_payment(
+            connection=con,
+            bu=bu,
+            inspection_date=inspection_date,
+            crew_lead=lead_name,
+            pay_to=lead_name,
+            structure_type=structure_type,
+            tia_inspection=tia_inspection_lead,
+            additional_canister_level=additional_canister_level_pay,
+            hvf=hvf_pay,
+            lighting_inspection_price=lighting_inspection_pay,
+            migratory_bird=migratory_bird_pay,
+            windsim=windsim_pay,
+            tension=tension_pay,
+            hr_pay=hr_pay_pay,
+            site_total=lead_site_total,
+            maintenance=maint,
+            extra_cans=extra_cans_count,
+        )
+
+        #
+        # Pay the second
+        #
+
+        payroll_sql.insert_payment(
+            connection=con,
+            bu=bu,
+            inspection_date=inspection_date,
+            crew_lead=lead_name,
+            pay_to=second_name,
+            structure_type=structure_type,
+            tia_inspection=tia_inspection_second,
+            additional_canister_level=additional_canister_level_pay,
+            hvf=hvf_pay,
+            lighting_inspection_price=lighting_inspection_pay,
+            migratory_bird=migratory_bird_pay,
+            windsim=windsim_pay,
+            tension=tension_pay,
+            hr_pay=hr_pay_pay,
+            site_total=second_site_total,
+            maintenance=maint,
+            extra_cans=extra_cans_count,
+        )
+
+    con.close()
+    # delete db file

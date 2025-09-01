@@ -11,6 +11,21 @@ class PayType(BaseModel):
     mp: float
     mp_cans: float
 
+    def get_pay_by_str(self, text) -> float:
+        my_text = text.lower()
+        match my_text:
+            case "guyed":
+                return self.guyed
+            case "ss":
+                return self.ss
+            case "mp":
+                return self.mp
+            case "mp_cans":
+                return self.mp_cans
+            case _:
+                msg = f"Unknown PayType element of {text}."
+                raise ValueError(msg)
+
 
 class PayTypes(BaseModel):
     """List of PayType"""
@@ -59,7 +74,7 @@ class Crews(BaseModel):
         This method is here to allow us to quickly find the crew lead for a certain
         spreadsheet row so we can calculate payroll for that lead and that crew's second.
         """
-        for crew in self.members:
+        for crew in self.crews:
             if crew.lead.spreadsheet_name == spreadsheet_name:
                 return crew
         msg = f"Could not find crew with lead spreadsheet_name of {spreadsheet_name}."
