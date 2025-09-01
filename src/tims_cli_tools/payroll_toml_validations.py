@@ -1,6 +1,5 @@
 from rich.pretty import pprint
 from . import field
-import sys
 from collections import Counter
 
 CREW_LEAD_NAME = "crew_lead_name"

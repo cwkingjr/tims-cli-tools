@@ -27,7 +27,7 @@ CREATE_PAYMENTS_TABLE_SQL = """
     """
 
 
-def insert_payment(
+def insert_payment(  # noqa: PLR0913
     *,
     connection,
     bu: int,

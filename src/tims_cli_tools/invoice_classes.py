@@ -1,13 +1,14 @@
 import pandas as pd
 from . import field, subcat, desc, ensure, price
 import copy
+from datetime import time
 
 
 class BaseColumnProcessor:
     """Base class for column processors"""
 
     def __init__(self, row: pd.Series):
-        self.column_name: str = None
+        self.column_name: str = ""
         self.row: pd.Series = row
         self.quantity: int = 1
         self.sub_category: str | None = None
@@ -32,7 +33,7 @@ class BaseColumnProcessor:
     def _get_my_column_value(self):
         return self._get_column_value(self.column_name)
 
-    def _column_value_contains_valid_data() -> bool:
+    def _column_value_contains_valid_data(self) -> None:
         """Make sure we can cast the column data to the required type."""
         raise NotImplementedError
 
@@ -175,7 +176,7 @@ class MAINTColumnProcessor(BaseColumnProcessor):
         self.sub_category = subcat.ADDER
         self.description = desc.MAINT_MIN_RATE
         self.column_name = field.MAINT
-        self.time = None
+        self.time: time
 
     def _column_value_contains_valid_data(self) -> None:
         self.time = self._get_my_column_value()
