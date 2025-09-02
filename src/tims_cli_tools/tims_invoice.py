@@ -3,23 +3,11 @@
 
 import sys
 from datetime import datetime, time
-from pathlib import Path
 import pandas as pd
 import pytz
 from rich.pretty import pprint
-
-from . import field, invoice_classes, subcat
-
-
-def check_for_required_fields(
-    *, required_fields: list[str], pd_df: pd.DataFrame
-) -> None:
-    """Check if all required fields are present in the DataFrame."""
-    required_field_set = set(required_fields)
-    df_columns_set = set(pd_df.columns.to_list())
-    missing_fields = required_field_set - df_columns_set
-    if missing_fields:
-        raise ValueError("Missing required fields: " + ", ".join(missing_fields))
+from .file_utils import create_cleaned_filepath
+from . import field, invoice_classes, subcat, pandas_utils
 
 
 def get_new_row(*, bu: int, subcat: str, desc: str, qty: int = 1) -> dict:
@@ -56,25 +44,6 @@ def build_new_rows_from_dataframe_col_values(*, dataframe: pd.DataFrame) -> list
         if one_rows_new_rows:
             all_new_rows.extend(one_rows_new_rows)
     return all_new_rows
-
-
-def create_cleaned_filepath(
-    *,
-    in_path=Path,
-    filename_prefix: str,
-    dt_with_tz: datetime,
-    dt_format_str="%Y%m%d_%H%M%S",
-) -> Path:
-    """Create a new filepath with cleaned up and appended filename."""
-    path = Path(in_path)
-    filename_no_extension = path.stem
-    filename_extension = path.suffix
-    path_parent = path.parent
-    add_to_filename = f"_{filename_prefix}_{dt_with_tz.strftime(dt_format_str)}"
-    cleaned_filename = filename_no_extension.strip().replace(" ", "_")
-    new_filename = cleaned_filename + add_to_filename + filename_extension
-    cleaned_full_path = path_parent / new_filename
-    return cleaned_full_path
 
 
 def create_derived_rows_list(row: pd.Series) -> list[dict]:
@@ -165,7 +134,9 @@ def main() -> None:  # noqa: PLR0912, PLR0915
     in_file = sys.argv[1]
     input_df = pd.read_excel(in_file)
 
-    check_for_required_fields(required_fields=field.REQUIRED_INPUT_COLS, pd_df=input_df)
+    pandas_utils.check_for_required_fields(
+        required_fields=field.REQUIRED_INPUT_COLS, pd_df=input_df
+    )
 
     # typically the provided spreadsheet has more columns than we need, so we select only the ones we need
     wanted_df = input_df[field.REQUIRED_INPUT_COLS]
@@ -235,7 +206,7 @@ def main() -> None:  # noqa: PLR0912, PLR0915
     # when it was generated
     cleaned_path = create_cleaned_filepath(
         in_path=in_file,
-        filename_prefix="_transformed",
+        filename_prefix="_transformed_invoice",
         dt_with_tz=datetime.now(tz=pytz.timezone("US/Central")),
     )
 

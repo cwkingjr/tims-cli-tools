@@ -1,32 +1,11 @@
 import sys
-import tomllib
 from pathlib import Path
+from .file_utils import get_toml_data
 
 import pandas as pd
 from rich.pretty import pprint
 
-PATH_SUFFIX = ".config/tims_tools/tims_tools.toml"
-
-
-def get_toml_data() -> dict:
-    home = Path.home()
-    config_path = home / PATH_SUFFIX
-
-    if not Path.exists(config_path):
-        pprint(f"Whoops, no config file exists at {config_path}")
-        pprint(
-            "Please see the repo directions and make sure you have the config file in this location.",
-        )
-        sys.exit(1)
-
-    try:
-        with Path.open(config_path, "rb") as f:
-            toml_data = tomllib.load(f)
-    except OSError as e:
-        msg = "Problem with loading toml data from the config file. Please check the settings in your config file to ensure they match the config file in the repo."
-        raise OSError(msg) from e
-
-    return toml_data
+CONFIG_FILE = Path.home() / ".config/tims_tools/tims_bu_info.toml"
 
 
 def main():
@@ -40,7 +19,7 @@ def main():
     bun = sys.argv[1]
     bun = int(bun.strip())
 
-    toml_data = get_toml_data()
+    toml_data = get_toml_data(config_path=CONFIG_FILE)
 
     if "tims_bu_info" not in toml_data:
         pprint("Whoops, couldn't find '[tims_bu_info]' section in your config file.")
