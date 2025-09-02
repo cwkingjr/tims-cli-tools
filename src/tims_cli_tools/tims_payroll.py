@@ -22,12 +22,10 @@ import io
 import json
 import duckdb
 from duckdb import DuckDBPyConnection
+import argparse
 
 CONFIG_FILE = Path.home() / ".config/tims_tools/tims_payroll.toml"
 DB_FILE = Path.home() / ".config/tims_tools/tmp_payroll.db"
-
-# TODO: Add arg parsing for input file, maybe individual spreadsheets, config file validation only
-# TODO: refactor across apps and create/update all tests
 
 
 def bogus_for_coverage() -> str:
@@ -238,12 +236,29 @@ def get_pay_to_dataframes(
 
 
 def main() -> None:  # noqa: PLR0915
-    if len(sys.argv) < 2:  # noqa: PLR2004
-        pprint(f"Usage: {sys.argv[0]} <input_file>")
+    pprint("Starting tims_payroll.")
+    parser = argparse.ArgumentParser(
+        description="Read input file from path and generate payroll spreadsheets.",
+    )
+
+    # Add an argument for the input file/spreadsheet
+    parser.add_argument(
+        "-i",
+        "--input-path",
+        type=str,  # The type of the argument (string for file path)
+        required=True,  # Make this argument mandatory
+        help="Path to the xlsx input spreadsheet.",
+    )
+
+    args = parser.parse_args()
+
+    input_path = args.input_path
+
+    if not Path(input_path).is_file():
+        pprint(f"Error: The input-path '{input_path}' is not a valid file path.")
         sys.exit(1)
 
-    in_file = sys.argv[1]
-    input_df = pd.read_excel(in_file)
+    input_df = pd.read_excel(input_path)
 
     #
     # Process the config info
@@ -352,4 +367,10 @@ def main() -> None:  # noqa: PLR0915
             pprint(f"Writing individual payroll spreadsheet for {pay_to}.")
 
     con.close()
+
     # delete db file
+    if db_file.exists():
+        try:
+            db_file.unlink()
+        except OSError as e:
+            pprint(f"Error deleting file '{DB_FILE}': {e}")
