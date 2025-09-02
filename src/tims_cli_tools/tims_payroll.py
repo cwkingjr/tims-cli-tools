@@ -27,8 +27,6 @@ CONFIG_FILE = Path.home() / ".config/tims_tools/tims_payroll.toml"
 DB_FILE = Path.home() / ".config/tims_tools/tmp_payroll.db"
 
 # TODO: Add arg parsing for input file, maybe individual spreadsheets, config file validation only
-# TODO: create consolidated output spreadsheet
-# TODO: create individual crew member spreadsheets
 # TODO: refactor across apps and create/update all tests
 
 
@@ -239,7 +237,7 @@ def get_pay_to_dataframes(
     return payee_tuples
 
 
-def main() -> None:
+def main() -> None:  # noqa: PLR0915
     if len(sys.argv) < 2:  # noqa: PLR2004
         pprint(f"Usage: {sys.argv[0]} <input_file>")
         sys.exit(1)
@@ -332,6 +330,7 @@ def main() -> None:
     all_payments_totals = payroll_sql.get_all_payments_totals(con=con)
     payee_tuples = get_pay_to_dataframes(con=con, crews=crews)
 
+    pprint("Writing consolidated payroll spreadsheet to your Documents folder.")
     payroll_spreadsheets.write_consolidated_spreadsheet(
         original_df=input_df,
         all_payments_df=all_payments_df,
@@ -339,14 +338,18 @@ def main() -> None:
         payee_tuples=payee_tuples,
     )
 
-    for one_tuple in payee_tuples:
-        pay_to, payee_df = one_tuple
-        ind_tots_df = payroll_sql.get_individual_payments_totals(con=con, pay_to=pay_to)
-        payroll_spreadsheets.write_individual_spreadsheet(
-            pay_to_name=pay_to,
-            individual_payments_totals_df=ind_tots_df,
-            individual_payments_df=payee_df,
-        )
+    if create_crew_spreadsheets:
+        for one_tuple in payee_tuples:
+            pay_to, payee_df = one_tuple
+            ind_tots_df = payroll_sql.get_individual_payments_totals(
+                con=con, pay_to=pay_to
+            )
+            payroll_spreadsheets.write_individual_spreadsheet(
+                pay_to_name=pay_to,
+                individual_payments_totals_df=ind_tots_df,
+                individual_payments_df=payee_df,
+            )
+            pprint(f"Writing individual payroll spreadsheet for {pay_to}.")
 
     con.close()
     # delete db file
