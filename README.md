@@ -46,11 +46,14 @@ This is typically only needed when the developer fixes bugs, adds features, or u
 uv tool upgrade tims-cli-tools
 ```
 
-Or, you can just upgrade all the tools managed by uv at once (don't include from the # on):
+Or, you can just upgrade all the tools managed by uv at once:
 
 ```bash
-uv tool list # to see all the tools you have installed that are managed by uv
-uv tool upgrade --all # to upgrade all the installed tools
+# to see all the tools you have installed that are managed by uv
+uv tool list
+
+# to upgrade all the installed tools
+uv tool upgrade --all
 ```
 
 ### Uninstall TIMS CLI Tools
@@ -59,62 +62,23 @@ uv tool upgrade --all # to upgrade all the installed tools
 uv tool uninstall tims-cli-tools
 ```
 
+# Applications Included
+
 ## TIMS BU Info
 
-### Description
-
-This tool accepts a BU number as it's command line argument, looks in the master tracker spreadsheet to find that BU, grabs some of the info from that row, and prints it into the terminal screen. The idea behind this tool is to allow you to very quickly grab address and lat/long for a BU instead of having to pull up the spreadsheet and find it yourself.
-
-### Set Up a Configuration File
-
-This tool requires a configuration file in a hidden directory so it can read that file to discover where the master tracker spreadsheet is located.
-
-Either grab the `tims_bu_info.toml` file from this repo or create one exactly like it from scratch with Notepad.
-
-The file contents need to be exactly the same as the example in this repo, but with the path in quotes changed to reflect where the production master tracker spreadsheet lives.
-
-This file must be in your home folder, under some additional folders, like this: `/Users/<your-user-name>/.config/tims_tools/tims_bu_info.toml`. That `.config` directory starts with a dot on purpose as thats a hidden folder (typically).
-
-On Windows it's something like this: `%HOMEDRIVE%%HOMEPATH%\.config\tims_tools\tims_bu_info.toml`.
-
-We're using this system of folders because that is convention for command line tool configs. That way, other tools can put their configs in `.config/` under a folder named for their tool, and can put whatever files they need under their folder.
-
-If you are interested in using Git Bash, you can go into that terminal and run this command: `mkdir -p ~/.config/tims_tools/` to make those folders all at one time. Then place your modified `tims_bu_info.toml` file into that tims_tools directory/folder.
-
-### Invoke TIMS BU Info
-
-To run the tool, go to the Git Bash Terminal and run (`<something>` inside angle brackets indicates this is something your are supposed to replace, replacing angles and all; meaning, leave out the angles.):
-
-```bash
-tims_bu_info <bu number>
-tims_bu_info 4746458576
-```
-
-Example output:
-
-<p align="center"><img src="images/bu_info_output.png" width="400" /></p>
+See `README_tims_bu_info.md` in this repo for information on setup and use. The application will be installed, updated, and removed as part of tims_cli_tools.
 
 ## TIMS Invoice
 
-The tims_invoice tool reads a spreadsheet extracted from the master tracing spreadsheet, grabs the columns it needs, and generates an output spreadsheet with the data transformed into the format required for pasting into a specific third party's invoice submission spreadsheet.
+See `README_tims_invoice.md` in this repo for information on setup and use. The application will be installed, updated, and removed as part of tims_cli_tools.
 
-Invoke the tool and pass it the path as to the extract spreadsheet. You'll love your life more if you don't put spaces in your file names.
+## TIMS Payroll
 
-```bash
-tims_invoice(.exe) <your_file_path.xlsx>
-```
+See `README_tims_payroll.md` in this repo for information on setup and use. The application will be installed, updated, and removed as part of tims_cli_tools.
 
-Unix/Linux Example:
+# Extras
 
-```bash
-tims_invoice Z:/invoice.xlsx
-```
-
-Windows Example:
-
-```bash
-tims_invoice.exe Z:/invoice.xlsx
-```
+## Moving Around in the Git Bash Terminal
 
 If you are not very good at moving around the terminal yet, get yourself an intro over at https://github.com/cwkingjr/unix-command-intro-for-windows-folks or just grab the path to the file you want to process via the Windows File Explorer and paste it in after the program command and one space on the command line.
 
@@ -125,5 +89,3 @@ Grabbing the path via the Windows File Explorer:
 ## Using a Windows BAT File
 
 If you would like to use a Windows Batch file to allow file drag and drop from the Windows Explorer to a batch file, have a look over at `https://github.com/cwkingjr/windows-drag-to-app-with-args` to see how to set up a batch file.
-
-Assuming `uv` installed this app on your system in the same general location as it did on mine, you can just copy the `tims_invoice.bat` file in this repository onto your desktop and it should work. If using the one provided here doesn't work, you should be able to figure out the issue using that link provided just above.
