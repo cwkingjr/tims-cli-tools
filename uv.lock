@@ -850,6 +850,7 @@ dependencies = [
     { name = "rich" },
     { name = "toolz" },
     { name = "types-jsonschema" },
+    { name = "types-openpyxl" },
     { name = "types-pytz" },
     { name = "xlsxwriter" },
 ]
@@ -877,6 +878,7 @@ requires-dist = [
     { name = "rich", specifier = ">=14.1.0" },
     { name = "toolz", specifier = ">=1.0.0" },
     { name = "types-jsonschema", specifier = ">=4.25.1.20250822" },
+    { name = "types-openpyxl", specifier = ">=3.1.5.20250822" },
     { name = "types-pytz", specifier = ">=2025.2.0.20250809" },
     { name = "xlsxwriter", specifier = ">=3.2.5" },
 ]
@@ -911,6 +913,15 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/64/7f/369b54dad6eb6b5adc1fb1c53edbed18e6c32cbc600357135308902fdbdc/types_jsonschema-4.25.1.20250822.tar.gz", hash = "sha256:aac69ed4b23f49aaceb7fcb834141d61b9e4e6a7f6008cb2f0d3b831dfa8464a", size = 15628, upload-time = "2025-08-22T03:04:18.293Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/b1/3d/bc1d171f032fcf63cedd4ade241f3f4e66d7e3bb53ee1da3c8f2f043eb0b/types_jsonschema-4.25.1.20250822-py3-none-any.whl", hash = "sha256:f82c2d7fa1ce1c0b84ba1de4ed6798469768188884db04e66421913a4e181294", size = 15923, upload-time = "2025-08-22T03:04:17.346Z" },
+]
+
+[[package]]
+name = "types-openpyxl"
+version = "3.1.5.20250822"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/fe/7f/ea358482217448deafdb9232f198603511d2efa99e429822256f2b38975a/types_openpyxl-3.1.5.20250822.tar.gz", hash = "sha256:c8704a163e3798290d182c13c75da85f68cd97ff9b35f0ebfb94cf72f8b67bb3", size = 100858, upload-time = "2025-08-22T03:03:31.835Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/5e/e8/cac4728e8dcbeb69d6de7de26bb9edb508e9f5c82476ecda22b58b939e60/types_openpyxl-3.1.5.20250822-py3-none-any.whl", hash = "sha256:da7a430d99c48347acf2dc351695f9db6ff90ecb761fed577b4a98fef2d0f831", size = 166093, upload-time = "2025-08-22T03:03:30.686Z" },
 ]
 
 [[package]]

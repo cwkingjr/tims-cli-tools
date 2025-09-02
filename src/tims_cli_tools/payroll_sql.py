@@ -1,6 +1,5 @@
 from datetime import date, time
 import pandas as pd
-import duckdb
 from duckdb import DuckDBPyConnection
 
 CREATE_PAYMENTS_TABLE_SEQUENCE = """
