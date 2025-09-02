@@ -1,0 +1,107 @@
+# Prod file name must be tims_payroll.toml
+# Your life will be easier if you keep these sorted within each section
+
+# For money types, do not use quotes, commas, dollar signs, etc.,
+# just #####.## with dot required so it's a decimal/float, but no ending zero
+# required. Examples:
+# these are okay: 10000.00, 10000.0
+# these are not: $1,000, $1000, 1000
+
+[processing_info]
+create_crew_spreadsheets = "Y" # "Y" or "N"
+process_logging = "Y"          # "Y" or "N"
+
+#
+# Do not add pay_type blocks without dev coord
+# Do not change pay_type_key values
+# Change prices as needed
+
+[[pay_type]]
+name = "Lead TIA Inspection Pay"
+pay_type_key = "LEAD_STD"
+guyed = 3.0
+ss = 4.0
+mp = 11.0
+mp_cans = 12.0
+
+[[pay_type]]
+name = "1st Tier Second TIA Inspection Pay"
+pay_type_key = "1T2"
+guyed = 4.0
+ss = 8.0
+mp = 7.0
+mp_cans = 5.0
+
+[[pay_type]]
+name = "2nd Tier Second TIA Inspection Pay"
+pay_type_key = "2T2"
+guyed = 5.0
+ss = 7.0
+mp = 10.0
+mp_cans = 13.0
+
+[[pay_type]]
+name = "3nd Tier Second TIA Inspection Pay"
+pay_type_key = "3T2"
+guyed = 7.0
+ss = 5.0
+mp = 3.0
+mp_cans = 8.0
+
+#
+# Additional Pay
+# Do not change variable names
+# Change prices as needed, with all values as clean decimal numbers
+#
+
+[additional_pay]
+extra_cans_each = 2.0
+hvf = 2.0
+lighting_inspection = 2.0
+migratory_bird = 2.0
+windsim = 3.0
+ttp_initial_reading = 0.0
+tension_700 = 2.0
+tension_850 = 2.0
+tension_1000 = 2.0
+hr_pay_per_hour = 10.0
+
+#
+# Crew Leads 
+# Create one [[crew_lead]] block per crew, formatted exactly as shown
+#
+
+[[crew_lead]]
+name = "John Harvey"
+spreadsheet_name = "John"
+pay_type_key = "LEAD_STD"
+
+[[crew_lead]]
+name = "Dave"
+spreadsheet_name = "Dave Smith"
+pay_type_key = "LEAD_STD"
+
+[[crew_lead]]
+name = "Bill Me"
+spreadsheet_name = "Bill"
+pay_type_key = "LEAD_STD"
+
+#
+# Crew Seconds
+# Create one [[crew_second]] block per crew second
+#
+
+[[crew_second]]
+name = "Joe Hammer"
+pay_type_key = "3T2"
+crew_lead_name = "John Doe"
+
+[[crew_second]]
+name = "Clark Kent"
+pay_type_key = "3T2"
+crew_lead_name = "Dave Smith"
+
+[[crew_second]]
+name = "Jamie Johnson"
+pay_type_key = "1T2"
+crew_lead_name = "Bill Me"
