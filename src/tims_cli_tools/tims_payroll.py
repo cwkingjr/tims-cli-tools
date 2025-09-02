@@ -236,6 +236,7 @@ def get_pay_to_dataframes(
 
 
 def main() -> None:  # noqa: PLR0915
+    pprint("Starting tims_payroll.")
     parser = argparse.ArgumentParser(
         description="Read input file from path and generate payroll spreadsheets.",
     )
