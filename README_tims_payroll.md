@@ -26,16 +26,10 @@ If you are interested in using Git Bash, you can go into that terminal and run t
 
 To run the tool, go to the Git Bash Terminal and run (`<something>` inside angle brackets indicates this is something your are supposed to replace, replacing angles and all; meaning, leave out the angles.):
 
+#### Example:
 ```bash
-# Mac/Linux
 tims_payroll -i <path-to-input-spreadsheet>
 tims_payroll --input-path <path-to-input-spreadsheet>
 tims_payroll --help
-
-# Windows
-tims_payroll.exe -i <path-to-input-spreadsheet>
-tims_payroll.exe --input-path <path-to-input-spreadsheet>
-tims_payroll.exe --help
-```
 
 If you want to set up a Windows batch file so you can drop a path onto an icon using Windows File Explorer, you can copy the `tims_payroll.bat` file in this repo to your desktop.
