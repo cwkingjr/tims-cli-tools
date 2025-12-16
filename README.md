@@ -64,10 +64,6 @@ uv tool uninstall tims-cli-tools
 
 # Applications Included
 
-## TIMS BU Info
-
-See `README_tims_bu_info.md` in this repo for information on setup and use. The application will be installed, updated, and removed as part of tims_cli_tools.
-
 ## TIMS Invoice
 
 See `README_tims_invoice.md` in this repo for information on setup and use. The application will be installed, updated, and removed as part of tims_cli_tools.
