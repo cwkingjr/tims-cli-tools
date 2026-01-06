@@ -26,13 +26,14 @@ tims_payroll = "tims_cli_tools.tims_payroll:main"
 
 [dependency-groups]
 dev = [
-    "coverage>=7.13.0",
+    "coverage>=7.13.1",
     "genson>=1.3",
     "just>=0.8",
     "mypy>=1.19.1",
+    "pip-audit>=2.10.0",
     "pytest>=9.0.2",
-    "ruff>=0.14.9",
-    "rust-just>=1.45.0",
+    "ruff>=0.14.10",
+    "rust-just>=1.46.0",
 ]
 
 [tool.ruff]
