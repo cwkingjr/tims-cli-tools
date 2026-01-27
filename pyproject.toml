@@ -33,6 +33,7 @@ dev = [
     "pytest>=9.0.2",
     "ruff>=0.14.9",
     "rust-just>=1.45.0",
+    "tprof>=1.1.0",
 ]
 
 [tool.ruff]
