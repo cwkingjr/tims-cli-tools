@@ -319,29 +319,21 @@ def main() -> None:  # noqa: PLR0912, PLR0915
 
         # Set column widths for better visibility
         for i, col in enumerate(wanted_df.columns):
-            if i in [
-                0,
-            ]:
+            if i == 0:
                 worksheet.set_column(i, i, len(col) + 1, align_format)
-            elif i in [
-                1,
-            ]:
+            elif i == 1:
                 worksheet.set_column(i, i, len(col) + 7, align_format)
-            elif i in [
-                2,
-            ]:
+            elif i == 2:  # noqa: PLR2004
                 worksheet.set_column(i, i, len(col) + 1, v_align_format)
-            elif i in [
-                3,
-            ]:
+            elif i == 3:  # noqa: PLR2004
                 worksheet.set_column(i, i, len(col) + 40, v_align_format)
-            elif i in [7]:
+            elif i == 7:  # noqa: PLR2004
                 worksheet.set_column(i, i, len(col) + 5, currency_format)
             elif i in [5, 6, *range(8, 15), 16]:
                 worksheet.set_column(i, i, len(col) + 1, currency_format)
-            elif i in [15]:
+            elif i == 15:  # noqa: PLR2004
                 worksheet.set_column(i, i, len(col) + 1, align_format)
-            elif i in [18]:
+            elif i == 18:  # noqa: PLR2004
                 worksheet.set_column(i, i, len(col) + 1, xcans_format)
             else:
                 worksheet.set_column(i, i, len(col) + 1, v_align_format)
