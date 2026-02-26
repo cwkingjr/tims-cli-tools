@@ -8,6 +8,7 @@ import pytz
 from rich.pretty import pprint
 from .file_utils import create_cleaned_filepath
 from . import field, invoice_classes, subcat, pandas_utils
+from pathlib import Path
 
 
 def get_new_row(*, bu: int, subcat: str, desc: str, qty: int = 1) -> dict:
@@ -205,7 +206,7 @@ def main() -> None:  # noqa: PLR0912, PLR0915
     # output has been transformed and give it a new datetime each time so user can always see
     # when it was generated
     cleaned_path = create_cleaned_filepath(
-        in_path=in_file,
+        in_path=Path(in_file),
         filename_prefix="_transformed_invoice",
         dt_with_tz=datetime.now(tz=pytz.timezone("US/Central")),
     )
