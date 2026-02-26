@@ -14,13 +14,12 @@ def create_cleaned_filepath(
     dt_format_str="%Y%m%d_%H%M%S",
 ) -> Path:
     """Create a new filepath with cleaned up and appended filename."""
-    path = Path(in_path)
-    filename_no_extension = path.stem
-    filename_extension = path.suffix
+    filename_no_extension = str(in_path.stem)
+    filename_extension = str(in_path.suffix)
     add_to_filename = f"_{filename_prefix}_{dt_with_tz.strftime(dt_format_str)}"
-    cleaned_filename = filename_no_extension.strip().replace(" ", "_")
-    new_filename = cleaned_filename + add_to_filename + filename_extension
-    cleaned_full_path = Path("~/Documents/" + new_filename).expanduser()
+    new_filename = filename_no_extension + add_to_filename + filename_extension
+    cleaned_new_filename = new_filename.strip().replace(" ", "_")
+    cleaned_full_path = Path("~/Documents/" + cleaned_new_filename).expanduser()
     return cleaned_full_path
 
 
