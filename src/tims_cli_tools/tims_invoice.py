@@ -230,7 +230,7 @@ def main() -> None:  # noqa: PLR0912, PLR0915
         workbook = writer.book
         worksheet = writer.sheets["Sheet1"]
 
-        dark_purple_header_format = workbook.add_format(  # type: ignore[attr-defined]
+        dark_purple_header_format = workbook.add_format(  # type: ignore[union-attr]
             {
                 "bold": True,
                 "text_wrap": True,
@@ -242,7 +242,7 @@ def main() -> None:  # noqa: PLR0912, PLR0915
             }
         )
 
-        blue_header_format = workbook.add_format(  # type: ignore[attr-defined]
+        blue_header_format = workbook.add_format(  # type: ignore[union-attr]
             {
                 "bold": True,
                 "text_wrap": True,
@@ -253,7 +253,7 @@ def main() -> None:  # noqa: PLR0912, PLR0915
             }
         )
 
-        light_purple_header_format = workbook.add_format(  # type: ignore[attr-defined]
+        light_purple_header_format = workbook.add_format(  # type: ignore[union-attr]
             {
                 "bold": True,
                 "text_wrap": True,
@@ -264,7 +264,7 @@ def main() -> None:  # noqa: PLR0912, PLR0915
             }
         )
 
-        orange_header_format = workbook.add_format(  # type: ignore[attr-defined]
+        orange_header_format = workbook.add_format(  # type: ignore[union-attr]
             {
                 "bold": True,
                 "text_wrap": True,
@@ -288,12 +288,12 @@ def main() -> None:  # noqa: PLR0912, PLR0915
 
         # # Define a number format with a thousands separator and two decimal places
         # # The '#,##0.00' format string specifies a comma for thousands and two decimal places
-        currency_format = workbook.add_format(  # type: ignore[attr-defined]
+        currency_format = workbook.add_format(  # type: ignore[union-attr]
             {"num_format": "#,##0.00", "valign": "vcenter"}
         )
-        align_format = workbook.add_format({"align": "center", "valign": "vcenter"})  # type: ignore[attr-defined]
-        v_align_format = workbook.add_format({"valign": "vcenter"})  # type: ignore[attr-defined]
-        xcans_format = workbook.add_format({"align": "left", "valign": "vcenter"})  # type: ignore[attr-defined]
+        align_format = workbook.add_format({"align": "center", "valign": "vcenter"})  # type: ignore[union-attr]
+        v_align_format = workbook.add_format({"valign": "vcenter"})  # type: ignore[union-attr]
+        xcans_format = workbook.add_format({"align": "left", "valign": "vcenter"})  # type: ignore[union-attr]
 
         # pprint({x: i for i, x in enumerate(field.OUTPUT_COLS)})
         # |   'SORT_BY': 0,
