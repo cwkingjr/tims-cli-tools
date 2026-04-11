@@ -227,7 +227,7 @@ def main() -> None:  # noqa: PLR0912, PLR0915
         )
 
         # This call returs an xlsxwriter workbook which has the .add_format method, but the type
-        # checker doesn't know that, so we have to ignore the type errors below via # type: ignore[attr-defined].
+        # checker doesn't know that, so we have to ignore the type errors below.
         workbook = writer.book
         worksheet = writer.sheets["Sheet1"]
 
