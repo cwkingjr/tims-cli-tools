@@ -11,4 +11,5 @@ test:
   - uv run coverage html
 typing:
   - uv run python3 -m mypy src
+  - uv run ty check src
 all: lint typing clean-coverage test
