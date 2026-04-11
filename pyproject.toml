@@ -35,6 +35,7 @@ dev = [
     "ruff>=0.15.4",
     "rust-just>=1.46.0",
     "tprof>=1.2.0",
+    "ty>=0.0.29",
 ]
 
 [tool.ruff]
@@ -74,3 +75,6 @@ ignore_missing_imports = true
 
 [tool.uv]
 package = true
+
+[tool.ty.terminal]
+error-on-warning = true
