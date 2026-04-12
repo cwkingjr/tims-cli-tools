@@ -70,3 +70,8 @@ def test_any_numeric_representation_to_float(testvalue, expected):
 
 def test_float_to_money_str():
     assert float_to_money_str(1000.00) == "1,000.00"
+
+
+def test_any_numeric_representation_raises_for_invalid_type():
+    with pytest.raises(ValueError, match="non int, float, or money_str"):
+        any_numeric_representation_to_float([1, 2, 3])
