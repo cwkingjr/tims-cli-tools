@@ -52,6 +52,16 @@ class TestAddExtraCansColumn:
         result = add_extra_cans_column(df)
         assert result[field.EXTRA_CANS].iloc[0] is pd.NA
 
+    def test_adds_none_for_structure_of_zero(self):
+        df = pd.DataFrame({field.STRUCTURE: [0]})
+        result = add_extra_cans_column(df)
+        assert result[field.EXTRA_CANS].iloc[0] is pd.NA
+
+    def test_adds_none_for_negative_structure(self):
+        df = pd.DataFrame({field.STRUCTURE: [-1]})
+        result = add_extra_cans_column(df)
+        assert result[field.EXTRA_CANS].iloc[0] is pd.NA
+
 
 class TestReformatMaintenanceToString:
     def test_converts_time_to_string(self):
@@ -111,6 +121,80 @@ class TestCreateDerivedRowsList:
 
         assert rows[0][field.DESCRIPTION] == desc.HEIGHT_VERIF
         assert rows[1][field.DESCRIPTION] == desc.LIGHT_INSP
+
+    def test_creates_maint_row_for_time_with_nonzero_value(self):
+        df = pd.DataFrame(
+            {
+                field.BU: [12345],
+                field.SORT_BY: [1000000],
+                field.MAINT: [time(hour=0, minute=30)],
+            }
+        )
+        row = df.iloc[0]
+        rows = create_derived_rows_list(row)
+
+        maint_rows = [r for r in rows if r[field.DESCRIPTION] == desc.MAINT_MIN_RATE]
+        assert len(maint_rows) == 1
+        assert maint_rows[0][field.QUANTITY] == 30
+
+    def test_does_not_create_maint_row_for_zero_time(self):
+        df = pd.DataFrame(
+            {
+                field.BU: [12345],
+                field.SORT_BY: [1000000],
+                field.MAINT: [time(hour=0, minute=0)],
+            }
+        )
+        row = df.iloc[0]
+        rows = create_derived_rows_list(row)
+
+        maint_rows = [r for r in rows if r[field.DESCRIPTION] == desc.MAINT_MIN_RATE]
+        assert len(maint_rows) == 0
+
+    def test_creates_extra_cans_row(self):
+        df = pd.DataFrame(
+            {
+                field.BU: [12345],
+                field.SORT_BY: [1000000],
+                field.EXTRA_CANS: [2],
+            }
+        )
+        row = df.iloc[0]
+        rows = create_derived_rows_list(row)
+
+        extra_cans_rows = [
+            r for r in rows if r[field.DESCRIPTION] == desc.ADDITIONAL_CAN
+        ]
+        assert len(extra_cans_rows) == 1
+
+    def test_creates_manlift_row(self):
+        df = pd.DataFrame(
+            {
+                field.BU: [12345],
+                field.SORT_BY: [1000000],
+                field.MAN_LIFT: ["$500.00"],
+            }
+        )
+        row = df.iloc[0]
+        rows = create_derived_rows_list(row)
+
+        manlift_rows = [r for r in rows if r[field.DESCRIPTION] == desc.MANLIFT_RENTAL]
+        assert len(manlift_rows) == 1
+
+    def test_increments_sort_by_for_each_derived_row(self):
+        df = pd.DataFrame(
+            {
+                field.BU: [12345],
+                field.SORT_BY: [1000000],
+                field.HVF_NO_SPACE: ["1,000.00"],
+                field.LIGHT_INSP: ["2,000.00"],
+            }
+        )
+        row = df.iloc[0]
+        rows = create_derived_rows_list(row)
+
+        assert rows[0][field.SORT_BY] == 1000001
+        assert rows[1][field.SORT_BY] == 1000002
 
 
 class TestBuildDerivedRows:

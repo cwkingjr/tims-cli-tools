@@ -185,6 +185,6 @@ class MAINTColumnProcessor(BaseColumnProcessor):
         try:
             # convert time object to total minutes
             self.quantity = self.time.hour * 60 + self.time.minute
-        except ValueError as e:
+        except (ValueError, AttributeError) as e:
             maintenance_value_error = f"Unexpected {field.MAINT} value of: {self.time}. Expected H:MM time format."
             raise ValueError(maintenance_value_error) from e

@@ -104,3 +104,66 @@ class TestInvoiceWriterProtocol:
     def test_xlsx_writer_implements_protocol(self):
         writer = XlsxInvoiceWriter()
         assert isinstance(writer, InvoiceWriter)
+
+
+class TestXlsxInvoiceWriterFormatting:
+    @pytest.fixture
+    def all_columns_df(self):
+        return pd.DataFrame(
+            data={
+                "SORT_BY": [1],
+                "BU": [12345],
+                "SUB CATEGORY": ["BASE"],
+                "DESCRIPTION": ["Test Description"],
+                "QUANTITY": [1],
+                "TIA Inspection": [100.0],
+                "Additional Canister Price": [10.0],
+                "HVF": [5.0],
+                "Lighting Inspection Price": [3.0],
+                "Migratory Bird": [2.0],
+                "Windsim": [1.0],
+                "TTP Initial Reading Price": [1.5],
+                "Tension Price": [10.0],
+                "HR.PAY": [50.0],
+                "Site Total": [500.0],
+                "MAINTENANCE": ["00:30"],
+                "Manlift Charge": [25.0],
+                "Structure": [3],
+                "X_CANS": [2],
+            }
+        )
+
+    def test_write_with_all_columns_exercises_header_branches(self, all_columns_df):
+        with tempfile.NamedTemporaryFile(suffix=".xlsx", delete=False) as f:
+            output_path = Path(f.name)
+
+        try:
+            writer = XlsxInvoiceWriter()
+            writer.write(all_columns_df, output_path)
+            assert output_path.exists()
+        finally:
+            output_path.unlink(missing_ok=True)
+
+    def test_write_with_single_column_exercises_else_branch(self):
+        df = pd.DataFrame({"Only Column": ["A", "B", "C"]})
+        with tempfile.NamedTemporaryFile(suffix=".xlsx", delete=False) as f:
+            output_path = Path(f.name)
+
+        try:
+            writer = XlsxInvoiceWriter()
+            writer.write(df, output_path)
+            assert output_path.exists()
+        finally:
+            output_path.unlink(missing_ok=True)
+
+    def test_write_empty_dataframe(self):
+        df = pd.DataFrame()
+        with tempfile.NamedTemporaryFile(suffix=".xlsx", delete=False) as f:
+            output_path = Path(f.name)
+
+        try:
+            writer = XlsxInvoiceWriter()
+            writer.write(df, output_path)
+            assert output_path.exists()
+        finally:
+            output_path.unlink(missing_ok=True)
