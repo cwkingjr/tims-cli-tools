@@ -1,9 +1,6 @@
 import pytest
 
-from tims_cli_tools.tims_invoice import (
-    get_value_from_series_col,
-    # build_new_rows_from_dataframe_col_values,
-)
+from tims_cli_tools.invoice_transform import get_value_from_series_col
 from tims_cli_tools import field
 
 

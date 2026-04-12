@@ -56,13 +56,18 @@ lint.select = [
     "SIM",  # simplify:   helps you simplify your code
     "UP",   # pyupgrade:  upgrade syntax or newer versions of the language
 ]
-lint.ignore = []
+lint.ignore = [
+    "PLR2004", # Magic value used in comparison (column indices, sys.argv checks)
+]
 
 [tool.ruff.lint.per-file-ignores]
 # Some checks don't make sense in unit tests
 "tests/*.py" = [
     "S101",    # Use of `assert` detected
-    "PLR0133", # Two constants compared in a comparison, consider replacing `1 == 1"
+    "S108",    # Probable insecure usage of temporary file or directory
+    "PLR0133", # Two constants compared in a comparison, consider replacing `1 == 1`
+    "PLR2004", # Magic value used in comparison, consider replacing with a named constant
+    "PLC0415", # `import` should be at the top-level of a file
 ]
 
 [tool.pytest.ini_options]
