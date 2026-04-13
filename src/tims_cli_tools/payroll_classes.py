@@ -159,7 +159,7 @@ def build_crews(*, config_crew_leads, config_crew_seconds, config_pay_types) -> 
         for one_lead in my_crew_leads:
             if one_lead.name == name:
                 return one_lead
-        msg = f"Couldn't find crew lead with name of {one_lead}."
+        msg = f"Couldn't find crew lead with name of {name}."
         raise ValueError(msg)
 
     crew_list = [

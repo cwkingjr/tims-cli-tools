@@ -2,6 +2,18 @@
 
 Home for some custom command line interface (CLI) tools I'm building to help some folks streamline some repetitive adminstrative tasks.
 
+## Table of Contents
+1. [Using the Windows PowerShell Terminal](#using-the-windows-powershell-terminal)
+2. [Install Git Bash and UV](#install-git-bash-and-uv-and-verify-installations)
+3. [Install TIMS CLI Tools](#install-tims-cli-tools)
+4. [Upgrade TIMS CLI Tools](#upgrade-tims-cli-tools)
+5. [Uninstall TIMS CLI Tools](#uninstall-tims-cli-tools)
+6. [TIMS Invoice](#tims-invoice)
+7. [TIMS Payroll](#tims-payroll)
+8. [Extras](#extras)
+   - [Moving Around in the Git Bash Terminal](#moving-around-in-the-git-bash-terminal)
+   - [Using a Windows BAT File](#using-a-windows-batch-file)
+
 ## Using the Windows PowerShell Terminal
 
 Open the terminal by right-clicking on the Windows Start icon and choosing Terminal.
