@@ -1,4 +1,3 @@
-import sys
 from contextlib import suppress
 from dataclasses import dataclass
 from pathlib import Path
@@ -9,11 +8,11 @@ import io
 import json
 
 from . import (
-    field,
     file_utils,
     payroll_toml_json_schema,
     payroll_toml_validations as ptv,
 )
+from .invoice_transform import add_extra_cans_column
 from .payroll_config import PayrollConfig
 from .payroll_classes import Crews, build_crews, build_additional_pay
 from .payroll_calculations import PayrollCalculator, extract_payment_input
@@ -25,6 +24,7 @@ from .payroll_writers import (
     XlsxIndividualSpreadsheetWriter,
 )
 from .payroll_classes import AdditionalPay
+from .readers import DataFrameReader, PandasExcelReader
 
 
 @dataclass
@@ -81,18 +81,28 @@ def process_payroll(config: ProcessPayrollConfig) -> None:
             )
 
 
-def run(input_path: str, config: PayrollConfig | None = None) -> None:
+def run(
+    input_path: str,
+    config: PayrollConfig | None = None,
+    consolidated_writer: ConsolidatedSpreadsheetWriter | None = None,
+    individual_writer: IndividualSpreadsheetWriter | None = None,
+    reader: DataFrameReader | None = None,
+) -> None:
     if config is None:
         config = PayrollConfig()
+    if consolidated_writer is None:
+        consolidated_writer = XlsxConsolidatedSpreadsheetWriter()
+    if reader is None:
+        reader = PandasExcelReader()
 
     pprint("Starting tims_payroll.")
 
     input_path_obj = Path(input_path)
     if not input_path_obj.is_file():
-        pprint(f"Error: The input-path '{input_path}' is not a valid file path.")
-        sys.exit(1)
+        msg = f"Error: The input-path '{input_path}' is not a valid file path."
+        raise FileNotFoundError(msg)
 
-    input_df = pd.read_excel(input_path)
+    input_df = reader.read_excel(input_path)
 
     pprint(f"Loading config file data from {config.config_file}.")
     toml_data = file_utils.get_toml_data(config_path=config.config_file)
@@ -133,9 +143,12 @@ def run(input_path: str, config: PayrollConfig | None = None) -> None:
     pprint("Found config data for these additional pay rates:")
     pprint(additional_pay)
 
-    input_df = _add_extra_cans_column(input_df)
+    input_df = add_extra_cans_column(input_df)
 
     repository = create_repository(config.db_file)
+
+    if create_crew_spreadsheets and individual_writer is None:
+        individual_writer = XlsxIndividualSpreadsheetWriter()
 
     try:
         pprint("Writing consolidated payroll spreadsheet to your Documents folder.")
@@ -146,24 +159,14 @@ def run(input_path: str, config: PayrollConfig | None = None) -> None:
                 additional_pay=additional_pay,
                 repository=repository,
                 create_crew_spreadsheets=create_crew_spreadsheets,
-                consolidated_writer=XlsxConsolidatedSpreadsheetWriter(),
-                individual_writer=XlsxIndividualSpreadsheetWriter()
-                if create_crew_spreadsheets
-                else None,
+                consolidated_writer=consolidated_writer,
+                individual_writer=individual_writer,
             )
         )
     finally:
         repository.close()
         with suppress(OSError):
             config.db_file.unlink()
-
-
-def _add_extra_cans_column(df: pd.DataFrame) -> pd.DataFrame:
-    df[field.EXTRA_CANS] = df[field.STRUCTURE].apply(
-        lambda x: int(x) - 1 if isinstance(x, int) and x - 1 > 0 else None,
-    )
-    df[field.EXTRA_CANS] = df[field.EXTRA_CANS].astype(pd.Int64Dtype())
-    return df
 
 
 def main() -> None:

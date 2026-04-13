@@ -62,6 +62,25 @@ class TestAddExtraCansColumn:
         result = add_extra_cans_column(df)
         assert result[field.EXTRA_CANS].iloc[0] is pd.NA
 
+    def test_handles_float_that_is_whole_number(self):
+        df = pd.DataFrame({field.STRUCTURE: [3.0]})
+        result = add_extra_cans_column(df)
+        assert result[field.EXTRA_CANS].iloc[0] == 2
+
+    def test_handles_numeric_string(self):
+        df = pd.DataFrame({field.STRUCTURE: ["3"]})
+        result = add_extra_cans_column(df)
+        assert result[field.EXTRA_CANS].iloc[0] == 2
+
+    def test_handles_multiple_rows_with_mixed_types(self):
+        df = pd.DataFrame({field.STRUCTURE: [3, 2.0, "4", None, "invalid"]})
+        result = add_extra_cans_column(df)
+        assert result[field.EXTRA_CANS].iloc[0] == 2
+        assert result[field.EXTRA_CANS].iloc[1] == 1
+        assert result[field.EXTRA_CANS].iloc[2] == 3
+        assert result[field.EXTRA_CANS].iloc[3] is pd.NA
+        assert result[field.EXTRA_CANS].iloc[4] is pd.NA
+
 
 class TestReformatMaintenanceToString:
     def test_converts_time_to_string(self):

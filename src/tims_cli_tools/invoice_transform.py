@@ -11,9 +11,20 @@ def get_value_from_series_col(*, series: pd.Series, field_name: str):
 
 
 def add_extra_cans_column(df: pd.DataFrame) -> pd.DataFrame:
-    df[field.EXTRA_CANS] = df[field.STRUCTURE].apply(
-        lambda x: x - 1 if isinstance(x, int) and x - 1 > 0 else None,
-    )
+    def _calc_extra_cans(x):
+        if isinstance(x, int) and x - 1 > 0:
+            return x - 1
+        if isinstance(x, float) and x.is_integer() and x - 1 > 0:
+            return int(x - 1)
+        try:
+            int_val = int(x)
+            if int_val - 1 > 0:
+                return int_val - 1
+        except TypeError, ValueError:
+            pass
+        return None
+
+    df[field.EXTRA_CANS] = df[field.STRUCTURE].apply(_calc_extra_cans)
     df[field.EXTRA_CANS] = df[field.EXTRA_CANS].astype(pd.Int64Dtype())
     return df
 

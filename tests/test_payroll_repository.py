@@ -262,6 +262,30 @@ class TestDuckDBPaymentRepository:
                 )
             )
 
+    def test_get_all_after_close_raises(self, repository):
+        repository.close()
+
+        with pytest.raises(RuntimeError, match="not connected"):
+            repository.get_all()
+
+    def test_get_all_totals_after_close_raises(self, repository):
+        repository.close()
+
+        with pytest.raises(RuntimeError, match="not connected"):
+            repository.get_all_totals()
+
+    def test_get_by_payee_after_close_raises(self, repository):
+        repository.close()
+
+        with pytest.raises(RuntimeError, match="not connected"):
+            repository.get_by_payee("Worker")
+
+    def test_get_individual_totals_after_close_raises(self, repository):
+        repository.close()
+
+        with pytest.raises(RuntimeError, match="not connected"):
+            repository.get_individual_totals("Worker")
+
 
 class TestCreateRepository:
     def test_creates_and_connects(self, temp_db):

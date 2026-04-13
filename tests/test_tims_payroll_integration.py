@@ -211,5 +211,5 @@ windsim = 4.0
             db_file=tmp_path / "test.db",
         )
 
-        with pytest.raises(SystemExit):
+        with pytest.raises(FileNotFoundError, match="not a valid file path"):
             run(input_path="/nonexistent/file.xlsx", config=config)

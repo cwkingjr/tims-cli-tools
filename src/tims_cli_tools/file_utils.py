@@ -6,6 +6,11 @@ from jsonschema import validate
 import pytz
 
 
+def get_current_central_time() -> datetime:
+    """Get current datetime in US/Central timezone. Extractable for testing."""
+    return datetime.now(tz=pytz.timezone("US/Central"))
+
+
 def create_cleaned_filepath(
     *,
     in_path=Path,

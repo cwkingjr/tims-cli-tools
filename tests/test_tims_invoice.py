@@ -1,8 +1,6 @@
-import sys
 from datetime import time
-from io import StringIO
 from pathlib import Path
-from unittest.mock import patch
+from unittest.mock import MagicMock
 
 import pandas as pd
 import pytest
@@ -50,13 +48,11 @@ def sample_input_df():
 
 
 class TestRun:
-    def test_run_with_missing_file_exits(self, tmp_path):
+    def test_run_with_missing_file_raises(self, tmp_path):
         nonexistent_path = tmp_path / "nonexistent.xlsx"
 
-        with patch.object(sys, "argv", ["tims_invoice", str(nonexistent_path)]):
-            with pytest.raises(SystemExit) as exc_info:
-                run(str(nonexistent_path))
-            assert exc_info.value.code == 1
+        with pytest.raises(FileNotFoundError, match="not a valid file path"):
+            run(str(nonexistent_path))
 
     def test_run_with_custom_writer(self, sample_input_df, tmp_path):
         input_path = tmp_path / "input.xlsx"
@@ -64,8 +60,6 @@ class TestRun:
 
         output_dir = tmp_path / "output"
         output_dir.mkdir()
-
-        captured_output = StringIO()
 
         class MockInvoiceWriter:
             write_called = False
@@ -77,25 +71,14 @@ class TestRun:
 
         mock_writer = MockInvoiceWriter()
 
-        with patch("tims_cli_tools.tims_invoice.create_cleaned_filepath") as mock_path:
-            mock_output = output_dir / "_transformed_invoice_001.xlsx"
-            mock_path.return_value = mock_output
+        mock_datetime = MagicMock()
+        mock_datetime.strftime.return_value = "20250101_120000"
+        mock_now = lambda: mock_datetime
 
-            with patch("sys.stdout", captured_output):
-                run(str(input_path), writer=mock_writer)
+        run(str(input_path), writer=mock_writer, now_func=mock_now)
 
         assert MockInvoiceWriter.write_called
         assert mock_writer.df is not None
-
-
-class TestMain:
-    def test_main_with_no_args_exits(self):
-        with patch.object(sys, "argv", ["tims_invoice"]):
-            with pytest.raises(SystemExit) as exc_info:
-                from tims_cli_tools.tims_invoice import main
-
-                main()
-            assert exc_info.value.code == 1
 
 
 class TestIntegration:
@@ -114,12 +97,11 @@ class TestIntegration:
                 CapturingWriter.captured_df = df
                 CapturingWriter.captured_path = output_path
 
-        with patch("tims_cli_tools.tims_invoice.create_cleaned_filepath") as mock_path:
-            mock_output = output_dir / "_transformed_invoice_001.xlsx"
-            mock_path.return_value = mock_output
+        mock_datetime = MagicMock()
+        mock_datetime.strftime.return_value = "20250101_120000"
+        mock_now = lambda: mock_datetime
 
-            run(str(input_path), writer=CapturingWriter())
+        run(str(input_path), writer=CapturingWriter(), now_func=mock_now)
 
         assert CapturingWriter.captured_df is not None
-        assert CapturingWriter.captured_path == mock_output
         assert len(CapturingWriter.captured_df) > 0

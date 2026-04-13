@@ -6,6 +6,9 @@ from tims_cli_tools.payroll_calculations import (
     PaymentInput,
     PayrollCalculator,
     extract_payment_input,
+    _coerce_to_float,
+    _coerce_to_int_or_none,
+    _coerce_to_str_or_none,
 )
 from tims_cli_tools.payroll_classes import (
     AdditionalPay,
@@ -382,3 +385,45 @@ class TestExtractPaymentInput:
         assert input_data.crew_lead_spreadsheet_name == "John"
         assert input_data.extra_cans == 2
         assert input_data.tension == 700.0
+
+
+class TestCoerceFunctions:
+    def test_coerce_to_float_from_int(self):
+        assert _coerce_to_float(5) == 5.0
+
+    def test_coerce_to_float_from_float(self):
+        assert _coerce_to_float(5.5) == 5.5
+
+    def test_coerce_to_float_from_string(self):
+        assert _coerce_to_float("123.45") == 123.45
+
+    def test_coerce_to_float_from_invalid_returns_zero(self):
+        assert _coerce_to_float(None) == 0.0
+        assert _coerce_to_float([]) == 0.0
+        assert _coerce_to_float("$1,234.56") == 0.0
+
+    def test_coerce_to_int_or_none_from_int(self):
+        assert _coerce_to_int_or_none(5) == 5
+
+    def test_coerce_to_int_or_none_from_float_whole_number(self):
+        assert _coerce_to_int_or_none(5.0) == 5
+
+    def test_coerce_to_int_or_none_from_string(self):
+        assert _coerce_to_int_or_none("42") == 42
+
+    def test_coerce_to_int_or_none_from_invalid_returns_none(self):
+        assert _coerce_to_int_or_none(None) is None
+        assert _coerce_to_int_or_none("not a number") is None
+
+    def test_coerce_to_int_or_none_from_non_whole_float_coerces(self):
+        assert _coerce_to_int_or_none(5.5) == 5
+
+    def test_coerce_to_str_or_none_from_string(self):
+        assert _coerce_to_str_or_none("  hello  ") == "hello"
+
+    def test_coerce_to_str_or_none_from_empty_string_returns_none(self):
+        assert _coerce_to_str_or_none("   ") is None
+
+    def test_coerce_to_str_or_none_from_non_string_returns_none(self):
+        assert _coerce_to_str_or_none(123) is None
+        assert _coerce_to_str_or_none(None) is None
