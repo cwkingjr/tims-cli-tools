@@ -1,6 +1,6 @@
 JSON_SCHEMA_STR = """
 {
-  "$schema": "http://json-schema.org/schema#",
+  "$schema": "http://json-schema.org/draft-07/schema",
   "additionalProperties": false,
   "type": "object",
   "properties": {
